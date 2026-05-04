@@ -15,7 +15,9 @@ import {
 } from "lucide-react";
 import Navbar from "../../components/Navbar/Navbar";
 import { orderService } from "../../services/orderService";
+import { getBlockchainErrorMessage } from "../../utils/blockchainErrors";
 import {
+  assertWalletCanSendTransaction,
   getBuyerMarketplaceContract,
   getFullPaymentWei,
   getPositiveWeiValue,
@@ -72,34 +74,10 @@ const shortText = (value, start = 8, end = 6) => {
   return `${String(value).slice(0, start)}...${String(value).slice(-end)}`;
 };
 
-const getErrorMessage = (error) => {
-  const raw = String(
-    error?.response?.data?.message ||
-    error?.reason ||
-    error?.shortMessage ||
-    error?.message ||
-    ""
-  );
-  const normalized = raw.toLowerCase();
-
-  if (!raw) return "Something went wrong while processing the transaction.";
-  if (error?.code === "ACTION_REJECTED" || normalized.includes("user rejected")) {
-    return "You rejected the transaction in MetaMask.";
-  }
-  if (normalized.includes("insufficient funds")) {
-    return "Your wallet does not have enough ETH for the payment or gas fee.";
-  }
-  if (normalized.includes("not buyer")) {
-    return "The connected MetaMask wallet is not the buyer wallet for this order.";
-  }
-  if (normalized.includes("cannot cancel now")) {
-    return "This order can no longer be cancelled.";
-  }
-  if (normalized.includes("order not confirmed")) {
-    return "The order has not been confirmed by the showroom yet.";
-  }
-  return raw;
-};
+const getErrorMessage = (error) =>
+  getBlockchainErrorMessage(error, {
+    fallback: "Something went wrong while processing the transaction.",
+  });
 
 const isFullPaymentRecorded = (order) =>
   order.paymentType === "full" &&
@@ -188,8 +166,15 @@ function MyOrders() {
   const handlePayDeposit = (order) => {
     runOrderAction(order, "payDeposit", async () => {
       const contract = await getBuyerMarketplaceContract(order);
+      const value = getPositiveWeiValue(order.depositAmountWei);
+      await assertWalletCanSendTransaction({
+        contract,
+        value,
+        estimateGas: () =>
+          contract.payDeposit.estimateGas(order.blockchainOrderId, { value }),
+      });
       const tx = await contract.payDeposit(order.blockchainOrderId, {
-        value: await getPositiveWeiValue(order.depositAmountWei),
+        value,
       });
       await tx.wait();
       await orderService.verifyDeposit(order._id, tx.hash);
@@ -200,8 +185,15 @@ function MyOrders() {
   const handlePayFull = (order) => {
     runOrderAction(order, "payFull", async () => {
       const contract = await getBuyerMarketplaceContract(order);
+      const value = getFullPaymentWei(order);
+      await assertWalletCanSendTransaction({
+        contract,
+        value,
+        estimateGas: () =>
+          contract.payFull.estimateGas(order.blockchainOrderId, { value }),
+      });
       const tx = await contract.payFull(order.blockchainOrderId, {
-        value: await getFullPaymentWei(order),
+        value,
       });
       await tx.wait();
       await orderService.verifyFullPayment(order._id, tx.hash);
@@ -213,6 +205,11 @@ function MyOrders() {
     if (!window.confirm("Have you received the car and want to complete this transaction?")) return;
     runOrderAction(order, "complete", async () => {
       const contract = await getBuyerMarketplaceContract(order);
+      await assertWalletCanSendTransaction({
+        contract,
+        estimateGas: () =>
+          contract.completeOrder.estimateGas(order.blockchainOrderId),
+      });
       const tx = await contract.completeOrder(order.blockchainOrderId);
       await tx.wait();
       await orderService.verifyComplete(order._id, tx.hash);
@@ -224,6 +221,11 @@ function MyOrders() {
     if (!window.confirm("Are you sure you want to cancel this order?")) return;
     runOrderAction(order, "cancel", async () => {
       const contract = await getBuyerMarketplaceContract(order);
+      await assertWalletCanSendTransaction({
+        contract,
+        estimateGas: () =>
+          contract.cancelOrder.estimateGas(order.blockchainOrderId),
+      });
       const tx = await contract.cancelOrder(order.blockchainOrderId);
       await tx.wait();
       await orderService.verifyCancel(order._id, tx.hash);

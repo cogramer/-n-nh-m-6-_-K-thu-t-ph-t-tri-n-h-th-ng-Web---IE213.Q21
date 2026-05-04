@@ -1,4 +1,4 @@
-import { BrowserProvider, Contract, parseEther, toBigInt } from "ethers";
+import { BrowserProvider, Contract, formatEther, parseEther, toBigInt } from "ethers";
 import contractArtifact from "../config/abi.json";
 
 const CONTRACT_ADDRESS =
@@ -7,6 +7,8 @@ const CONTRACT_ADDRESS =
 const SEPOLIA_CHAIN_ID = 11155111n;
 const SEPOLIA_CHAIN_HEX = "0xaa36a7";
 const USD_PER_ETH = Number(import.meta.env.VITE_USD_PER_ETH || 2000000);
+const GAS_BUFFER_NUMERATOR = 120n;
+const GAS_BUFFER_DENOMINATOR = 100n;
 
 const shortenAddress = (address) => {
   if (!address) return "";
@@ -20,6 +22,18 @@ export const getPositiveWeiValue = (amountWei) => {
   if (value <= 0n) throw new Error("Payment amount is invalid.");
 
   return value;
+};
+
+const getNonNegativeWeiValue = (amountWei = 0n) => {
+  const value = toBigInt(amountWei);
+  if (value < 0n) throw new Error("Payment amount is invalid.");
+  return value;
+};
+
+const formatSepoliaEth = (amountWei) => {
+  const [whole, fraction = ""] = formatEther(amountWei).split(".");
+  const trimmedFraction = fraction.slice(0, 8).replace(/0+$/, "");
+  return `${trimmedFraction ? `${whole}.${trimmedFraction}` : whole} SepoliaETH`;
 };
 
 export const getFullPaymentWei = (order) => {
@@ -66,6 +80,12 @@ export const ensureSepoliaNetwork = async () => {
   }
 
   const switchedProvider = new BrowserProvider(window.ethereum);
+  const switchedNetwork = await switchedProvider.getNetwork();
+
+  if (switchedNetwork.chainId !== SEPOLIA_CHAIN_ID) {
+    throw new Error("MetaMask is connected to the wrong network. Please switch to Sepolia.");
+  }
+
   await switchedProvider.send("eth_requestAccounts", []);
   return switchedProvider;
 };
@@ -99,6 +119,49 @@ export const getMarketplaceContract = async (expectedWallet) => {
   const signer = await getVerifiedSigner(provider, expectedWallet);
 
   return new Contract(CONTRACT_ADDRESS, contractArtifact.abi, signer);
+};
+
+export const assertWalletCanSendTransaction = async ({
+  contract,
+  value = 0n,
+  estimateGas,
+}) => {
+  if (!contract?.runner?.provider || !contract?.runner?.getAddress) {
+    throw new Error("Could not read the connected MetaMask wallet.");
+  }
+
+  if (typeof estimateGas !== "function") {
+    throw new Error("Gas estimation function is missing.");
+  }
+
+  const provider = contract.runner.provider;
+  const signerAddress = await contract.runner.getAddress();
+  const txValue = getNonNegativeWeiValue(value);
+  const estimatedGas = toBigInt(await estimateGas());
+  const feeData = await provider.getFeeData();
+  const gasPrice = feeData.maxFeePerGas ?? feeData.gasPrice ?? 0n;
+  const bufferedGasCost =
+    (estimatedGas * gasPrice * GAS_BUFFER_NUMERATOR) / GAS_BUFFER_DENOMINATOR;
+  const requiredBalance = txValue + bufferedGasCost;
+  const currentBalance = await provider.getBalance(signerAddress);
+
+  if (currentBalance < requiredBalance) {
+    const error = new Error(
+      `Insufficient SepoliaETH balance. Available ${formatSepoliaEth(
+        currentBalance
+      )}, required at least ${formatSepoliaEth(
+        requiredBalance
+      )} including estimated gas.`
+    );
+    error.code = "INSUFFICIENT_FUNDS";
+    throw error;
+  }
+
+  return {
+    balance: currentBalance,
+    estimatedGas,
+    requiredBalance,
+  };
 };
 
 export const getBuyerMarketplaceContract = async (order) => {

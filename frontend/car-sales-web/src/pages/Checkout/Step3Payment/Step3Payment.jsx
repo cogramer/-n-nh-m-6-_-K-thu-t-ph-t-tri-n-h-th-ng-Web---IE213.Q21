@@ -3,6 +3,7 @@ import { CheckCircle, LockKeyhole, Plus, Wallet } from "lucide-react";
 import "./Step3Payment.css";
 import metamaskIcon from "../../../assets/icon/metamask.png";
 import { getMyWallets, addWallet } from "../../../services/walletService";
+import { getBlockchainErrorMessage } from "../../../utils/blockchainErrors";
 import { requestMetaMaskAccounts } from "../../../utils/metamaskWallets";
 
 function Step3Payment({
@@ -156,15 +157,10 @@ function Step3Payment({
         notify("Selected MetaMask wallet is already saved.");
       }
     } catch (error) {
-      if (error.code === 4001) {
-        notify("MetaMask connection was rejected.");
-        return;
-      }
-
       notify(
-        error.response?.data?.message ||
-          error.message ||
-          "Could not connect MetaMask."
+        getBlockchainErrorMessage(error, {
+          fallback: "Could not connect MetaMask.",
+        })
       );
     } finally {
       setConnectingWallet(false);
@@ -181,6 +177,16 @@ function Step3Payment({
           contract. The selected wallet must be active in MetaMask when you
           confirm.
         </p>
+      </div>
+
+      <div className="payment-safety-panel">
+        <strong>Payment safety checks</strong>
+        <ul>
+          <li>MetaMask must be on Sepolia and unlocked.</li>
+          <li>The selected wallet must match the active MetaMask account.</li>
+          <li>The wallet must have enough SepoliaETH for payment and gas.</li>
+          <li>RPC, gas estimation, and smart contract rejection errors are shown as readable messages.</li>
+        </ul>
       </div>
 
       <div className="payment-plan-grid">

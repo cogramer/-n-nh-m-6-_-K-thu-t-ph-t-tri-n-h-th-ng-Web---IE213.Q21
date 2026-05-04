@@ -1,52 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, Eye, CheckSquare, LoaderCircle } from 'lucide-react';
+import { CheckCircle, XCircle, Eye, LoaderCircle } from 'lucide-react';
 import { orderService } from '../../../services/orderService';
+import { getBlockchainErrorMessage } from '../../../utils/blockchainErrors';
 import './OrderList.css';
 
-const getVietnameseErrorMessage = (error, fallback) => {
-  const rawMessage = String(
-    error?.response?.data?.message ||
-    error?.reason ||
-    error?.shortMessage ||
-    error?.message ||
-    ""
-  );
-  const normalized = rawMessage.toLowerCase();
-
-  if (!rawMessage) return fallback;
-  if (error?.code === "ACTION_REJECTED" || normalized.includes("user rejected")) {
-    return "Bạn đã từ chối ký giao dịch trên MetaMask.";
-  }
-  if (normalized.includes("insufficient funds")) {
-    return "Ví không đủ ETH để thanh toán phí gas hoặc thực hiện giao dịch.";
-  }
-  if (normalized.includes("not seller")) {
-    return "Ví đang kết nối không phải ví người bán của đơn hàng này.";
-  }
-  if (normalized.includes("not buyer")) {
-    return "Ví đang kết nối không phải ví người mua của đơn hàng này.";
-  }
-  if (normalized.includes("order not paid")) {
-    return "Đơn hàng chưa được thanh toán trên Smart Contract.";
-  }
-  if (normalized.includes("invalid status")) {
-    return "Trạng thái đơn hàng trên Smart Contract chưa phù hợp để thực hiện thao tác này.";
-  }
-  if (normalized.includes("order not found")) {
-    return "Không tìm thấy đơn hàng trên Smart Contract.";
-  }
-  if (normalized.includes("cannot cancel now")) {
-    return "Không thể hủy đơn hàng ở trạng thái hiện tại.";
-  }
-  if (normalized.includes("execution reverted")) {
-    return "Giao dịch bị Smart Contract từ chối. Vui lòng kiểm tra trạng thái đơn hàng và ví đang kết nối.";
-  }
-  if (normalized.includes("network") || normalized.includes("chain")) {
-    return "Mạng blockchain trên MetaMask chưa đúng. Vui lòng chuyển sang mạng Sepolia.";
-  }
-
-  return rawMessage;
-};
+const getVietnameseErrorMessage = (error, fallback) =>
+  getBlockchainErrorMessage(error, { fallback, locale: "vi" });
 
 const isFullPaymentRecorded = (order) =>
   order.paymentType === 'full' &&
