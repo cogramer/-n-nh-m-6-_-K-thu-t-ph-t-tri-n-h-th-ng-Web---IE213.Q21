@@ -39,7 +39,7 @@ passport.use(
 );
 
 
-// SESSION (nếu bạn có dùng express-session)
+// Session support when express-session is enabled
 passport.serializeUser((user, done) => done(null, user.id));
 
 passport.deserializeUser(async (id, done) => {

@@ -9,6 +9,11 @@ import "./CarDetail.css";
 import { useCart } from "../../context/CartContext";
 import add from "../../assets/icon/add.png";
 import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import {
+  getProductHeroImagePath,
+  PLACEHOLDER_IMAGE_URL,
+  resolveImageUrl,
+} from "../../utils/imageUrl";
 
 const getAuthToken = () => {
   return localStorage.getItem("authToken") || localStorage.getItem("token");
@@ -43,6 +48,11 @@ function CarDetail() {
   const [isWishlisted, setIsWishlisted] = useState(false);
   const { addToCart } = useCart();
 
+  const handleImageError = useCallback((event) => {
+    event.currentTarget.onerror = null;
+    event.currentTarget.src = PLACEHOLDER_IMAGE_URL;
+  }, []);
+
   const [reviews, setReviews] = useState([]);
   const [reviewsLoading, setReviewsLoading] = useState(false);
   const [reviewsError, setReviewsError] = useState("");
@@ -71,7 +81,7 @@ function CarDetail() {
 
       setIsWishlisted(ids.includes(String(id)));
     } catch (error) {
-      console.error("Lỗi khi lấy wishlist:", error);
+      console.error("Failed to fetch wishlist:", error);
       setIsWishlisted(false);
     }
   }, [id]);
@@ -80,7 +90,7 @@ function CarDetail() {
     const token = getAuthToken();
 
     if (!token) {
-      alert("Vui lòng đăng nhập để thêm vào wishlist");
+      alert("Please log in to add this car to your wishlist.");
       return;
     }
 
@@ -96,7 +106,7 @@ function CarDetail() {
 
       window.dispatchEvent(new Event("wishlist-change"));
     } catch (error) {
-      console.error("Lỗi khi cập nhật wishlist:", error);
+      console.error("Failed to update wishlist:", error);
       setIsWishlisted(!nextState);
     }
   };
@@ -106,10 +116,11 @@ function CarDetail() {
       try {
         setLoading(true);
         const data = await ProductService.getProductById(id);
+        // Use gallery as a final fallback so every detail page has a visible hero image.
         setCar(data);
-        setActiveHeroImage(data?.heroImage || data?.thumbnailImage || "");
+        setActiveHeroImage(getProductHeroImagePath(data));
       } catch (error) {
-        console.error("Lỗi khi lấy chi tiết sản phẩm:", error);
+        console.error("Failed to fetch product details:", error);
       } finally {
         setLoading(false);
       }
@@ -161,12 +172,6 @@ function CarDetail() {
   const gallery = Array.isArray(car?.galleryImages) ? car.galleryImages : [];
   const activeGalleryImage =
     activeGalleryIndex !== null ? gallery[activeGalleryIndex] : "";
-
-  const getImageSrc = (src) => {
-    if (!src) return "";
-    if (/^(https?:|data:|blob:)/i.test(src)) return src;
-    return src.startsWith("/") ? src : `/${src}`;
-  };
 
   const closeGalleryLightbox = () => {
     setActiveGalleryIndex(null);
@@ -344,9 +349,9 @@ function CarDetail() {
         <Navbar />
         <main className="car-detail">
           <div className="car-detail-container">
-            <h1 className="car-detail-title">Không tìm thấy xe</h1>
+            <h1 className="car-detail-title">Car not found</h1>
             <Link className="car-detail-back" to="/cars">
-              Xem danh sách xe
+              View car list
             </Link>
           </div>
         </main>
@@ -462,10 +467,11 @@ function CarDetail() {
           <div className="car-detail-top">
             <div className="car-detail-hero">
               <img
-                src={getImageSrc(activeHeroImage)}
+                src={resolveImageUrl(activeHeroImage)}
                 alt={car.name}
                 loading="eager"
                 decoding="async"
+                onError={handleImageError}
               />
             </div>
 
@@ -549,10 +555,11 @@ function CarDetail() {
                     aria-label={`View ${car.name} gallery image ${index + 1}`}
                   >
                     <img
-                      src={getImageSrc(src)}
+                      src={resolveImageUrl(src)}
                       alt={`${car.name} gallery ${index + 1}`}
                       loading="lazy"
                       decoding="async"
+                      onError={handleImageError}
                     />
                   </button>
                 ))}
@@ -607,8 +614,9 @@ function CarDetail() {
                 <div className="car-detail-lightbox-image-wrap">
                   <img
                     className="car-detail-lightbox-image"
-                    src={getImageSrc(activeGalleryImage)}
+                    src={resolveImageUrl(activeGalleryImage)}
                     alt={`${car.name} gallery ${activeGalleryIndex + 1}`}
+                    onError={handleImageError}
                   />
                 </div>
 
@@ -628,7 +636,11 @@ function CarDetail() {
                         onClick={() => setActiveGalleryIndex(index)}
                         aria-label={`Open gallery image ${index + 1}`}
                       >
-                        <img src={getImageSrc(src)} alt="" />
+                        <img
+                          src={resolveImageUrl(src)}
+                          alt=""
+                          onError={handleImageError}
+                        />
                       </button>
                     ))}
                   </div>

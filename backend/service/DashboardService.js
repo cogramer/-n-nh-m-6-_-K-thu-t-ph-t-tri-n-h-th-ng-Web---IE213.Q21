@@ -24,7 +24,7 @@ export const getSummaryService = async () => {
 
           totalOrders: { $sum: 1 },
 
-          // Doanh thu hoàn tất
+          // Completed revenue
           totalRevenue: {
             $sum: {
               $cond: [
@@ -35,21 +35,21 @@ export const getSummaryService = async () => {
             },
           },
 
-          // Đơn hoàn tất
+          // Completed orders
           completedOrders: {
             $sum: {
               $cond: [{ $eq: ["$status", "completed"] }, 1, 0],
             },
           },
 
-          // Đơn đang xử lý
+          // Processing orders
           processingOrders: {
             $sum: {
               $cond: [{ $eq: ["$status", "processing"] }, 1, 0],
             },
           },
 
-          // Đơn đang chờ cọc
+          // Orders waiting for deposit
           pendingOrders: {
             $sum: {
               $cond: [
@@ -60,10 +60,10 @@ export const getSummaryService = async () => {
             },
           },
 
-          // Tổng giá trị đơn
+          // Total order value
           totalOrderValue: { $sum: "$totalAmount" },
 
-          // Tổng tiền đã trả
+          // Total paid amount
           totalPaid: { $sum: "$paidAmount" },
         },
       },
@@ -293,31 +293,31 @@ export const getBlockchainStatsService = async () => {
 
         // ===== ADVANCED =====
 
-        // Số đơn hoàn tất
+        // Completed orders
         completedOrders: {
           $sum: {
             $cond: [{ $eq: ["$status", "completed"] }, 1, 0],
           },
         },
 
-        // Số đơn đang xử lý
+        // Processing orders
         processingOrders: {
           $sum: {
             $cond: [{ $eq: ["$status", "processing"] }, 1, 0],
           },
         },
 
-        // Tổng giá trị đơn hàng
+        // Total order value
         totalOrderValue: { $sum: "$totalAmount" },
 
-        // Tổng số tiền còn phải trả
+        // Total remaining amount
         remainingAmount: {
           $sum: {
             $subtract: ["$totalAmount", "$paidAmount"],
           },
         },
 
-        // Số đơn có transaction blockchain (deposit)
+        // Orders with blockchain deposit transactions
         blockchainOrders: {
           $sum: {
             $cond: [
@@ -328,7 +328,7 @@ export const getBlockchainStatsService = async () => {
           },
         },
 
-        // Tổng tiền cọc theo blockchain thật
+        // Total deposit amount from real blockchain transactions
         blockchainDeposit: {
           $sum: {
             $cond: [
@@ -360,19 +360,19 @@ export const getBlockchainStatsService = async () => {
   return {
     ...result,
 
-    // % đơn đã cọc
+    // % orders with deposit
     depositRate:
       result.totalOrders > 0
         ? (result.paidOrders / result.totalOrders) * 100
         : 0,
 
-    // % hoàn thành
+    // % completed
     completionRate:
       result.totalOrders > 0
         ? (result.completedOrders / result.totalOrders) * 100
         : 0,
 
-    // % đã thanh toán
+    // % paid
     paymentRate:
       result.totalOrderValue > 0
         ? (result.totalPaid / result.totalOrderValue) * 100

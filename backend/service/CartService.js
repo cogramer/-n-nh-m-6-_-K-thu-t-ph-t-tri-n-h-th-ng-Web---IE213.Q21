@@ -27,7 +27,7 @@ export const getCartService = async (userId) => {
     return { userId, items: [], totalPrice: 0, totalItems: 0 };
   }
 
-  // remove product bị xoá
+  // Remove deleted products
   cart.items = cart.items.filter((item) => item.productId);
 
   return cart;
@@ -47,7 +47,7 @@ export const addToCartService = async (userId, body) => {
     throw new Error("Sản phẩm đã hết hàng");
   }
 
-  // FIX: dùng returnDocument thay new
+  // FIX: use returnDocument instead of new
   let cart = await Cart.findOneAndUpdate(
     { userId },
     { $setOnInsert: { userId, items: [] } },

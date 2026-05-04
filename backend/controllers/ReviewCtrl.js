@@ -3,11 +3,11 @@ import {
     getReviewsByProductIdService
 } from "../service/ReviewService.js";
 
-// Tạo đánh giá mới
+// Create a new review
 export const createReview = async (req, res) => {
     try {
         const { productId, rating, comment } = req.body;
-        const userId = req.user?.id; // lấy từ token do đã chạy authMiddleware
+        const userId = req.user?.id; // Read from the token after authMiddleware runs
         const numericRating = Number(rating);
         
         const review = await createReviewService({ productId, userId, rating: numericRating, comment });
@@ -17,7 +17,7 @@ export const createReview = async (req, res) => {
     }
 }
 
-// Lấy tất cả đánh giá của một sản phẩm
+// Fetch all reviews for one product
 export const getReviewsByProductId = async (req, res) => {
     try {
         const { productId } = req.params;

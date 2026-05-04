@@ -169,7 +169,7 @@
   color: #111;
 }
 
-/* Gallery title chỉnh to bằng Technical detail */
+/* Match the gallery title size with Technical detail */
 .car-detail-gallery-title {
   font-size: 34px;
   line-height: 1.2;
@@ -585,7 +585,7 @@
   font-weight: 800;
 }
 
-/* Fix textarea bị tràn ra khỏi card */
+/* Prevent textarea overflow from the card */
 .car-detail-review-textarea {
   width: 100%;
   max-width: 100%;
@@ -756,7 +756,7 @@
    RESPONSIVE - CAR DETAIL PAGE
 ===================================== */
 
-/* Laptop nhỏ */
+/* Small laptop breakpoint */
 @media (max-width: 1200px) {
   .car-detail-container {
     padding: 36px 5%;
@@ -817,7 +817,7 @@
   }
 }
 
-/* Tablet dọc */
+/* Portrait tablet breakpoint */
 @media (max-width: 768px) {
   .car-detail-container {
     padding: 28px 18px;
@@ -1004,7 +1004,7 @@
   }
 }
 
-/* Mobile nhỏ */
+/* Small mobile breakpoint */
 @media (max-width: 400px) {
   .car-detail-container {
     padding: 20px 10px;
@@ -1042,7 +1042,7 @@
   }
 }
 
-/* Giữ hero image không bị nền, viền, shadow */
+/* Keep the hero image without background, border, or shadow */
 .car-detail .car-detail-top .car-detail-hero {
   background: transparent !important;
   border: 0 !important;

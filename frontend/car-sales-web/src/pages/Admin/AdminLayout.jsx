@@ -17,10 +17,10 @@ const AdminLayout = () => {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const location = useLocation();
 
-  // Hàm kiểm tra link đang active để tô màu menu
+  // Check whether a link is active to highlight the menu
   const isActive = (path) => location.pathname === path;
 
-  // Đóng menu khi click vào link
+  // Close the menu after a link click
   const handleMenuItemClick = () => {
     setIsMobileMenuOpen(false);
   };

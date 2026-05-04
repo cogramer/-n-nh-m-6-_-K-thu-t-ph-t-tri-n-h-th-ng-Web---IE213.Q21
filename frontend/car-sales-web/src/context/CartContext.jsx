@@ -145,8 +145,8 @@ export const CartProvider = ({ children }) => {
     }
   };
 
-  // quantity là số lượng mới, ví dụ 1, 2, 3.
-  // Không phải +1 hoặc -1.
+  // quantity is the next absolute quantity, for example 1, 2, or 3.
+  // It is not a +1 or -1 delta.
   const updateQuantity = async (productId, quantity) => {
     try {
       const token = localStorage.getItem("authToken");

@@ -2,13 +2,13 @@ import api from "./api";
 import { API_URL } from "./apiConfig";
 
 const AuthService = {
-  // Đăng ký tài khoản mới
+  // Register a new account
   register: (data) => api.post("/users/register", data),
 
-  // Xác thực mã OTP sau khi đăng ký hoặc để reset pass
+  // Verify OTP after registration or password reset
   verifyOtp: (email, otp) => api.post("/users/verifyOtp", { email, otp }),
 
-  // Đăng nhập
+  // Log in
   login: async (email, password) => {
     const response = await api.post("/users/login", { email, password });
 
@@ -39,21 +39,21 @@ const AuthService = {
     return response;
   },
 
-  // Đăng nhập bằng Google
+  // Log in with Google
   googleLogin: () => {
     window.location.href = `${API_URL}/api/users/auth/google`;
   },
 
-  // Quên mật khẩu - gửi OTP về mail
+  // Forgot password - send OTP by email
   forgotPassword: (email) => api.post("/users/forgot-password", { email }),
 
-  // Đặt lại mật khẩu mới với OTP
+  // Reset password with OTP
   resetPassword: (data) => api.post("/users/reset-password", data),
 
   // Verify OTP cho reset password
   verifyResetOtp: (email, otp) => api.post("/users/verifyOtp", { email, otp }),
 
-  // Làm mới access token khi hết hạn
+  // Refresh an expired access token
   refreshToken: async () => {
     const response = await api.post("/users/refresh-token");
 

@@ -1,7 +1,7 @@
 import { ethers } from "ethers";
 
 const USD_PER_ETH = 2000000;   // 1 ETH = 2,000,000 USD (fake rate)
-const DEPOSIT_PERCENT = 0.5; // 5% tiền cọc
+const DEPOSIT_PERCENT = 0.5; // 5% deposit
 
 /**
  * Tính tiền đặt cọc từ giá xe USD
@@ -28,7 +28,7 @@ export function convertUsdToEth(usdAmount) {
 
   const ethAmount = usd / USD_PER_ETH;
 
-  // giữ 6 số lẻ cho đẹp
+  // Keep six decimal places for display
   return ethAmount.toFixed(6);
 }
 

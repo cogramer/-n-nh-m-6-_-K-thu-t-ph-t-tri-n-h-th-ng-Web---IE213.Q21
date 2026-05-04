@@ -5,7 +5,7 @@ import {
     readContactService
 } from '../service/ContactService.js';
 
-// Lấy toàn bộ liên hệ
+// Fetch all contacts
 export const getAllContacts = async (req, res) => {
     try {
         const contacts = await getAllContactsService();
@@ -16,7 +16,7 @@ export const getAllContacts = async (req, res) => {
     }
 }
 
-// Lấy 1 liên hệ theo id
+// Fetch one contact by id
 export const getContactById = async (req, res) => {
     try {
         const { id } = req.params;
@@ -28,7 +28,7 @@ export const getContactById = async (req, res) => {
     }
 }
 
-// Tạo liên hệ mới
+// Create a new contact
 export const createContact = async (req, res) => {
     try {
         const contact = await createContactService(req.body);
@@ -39,7 +39,7 @@ export const createContact = async (req, res) => {
     }
 }
 
-// Đánh dấu liên hệ đã đọc
+// Mark a contact as read
 export const readContact = async (req, res) => {
     try {
         const { id } = req.params;

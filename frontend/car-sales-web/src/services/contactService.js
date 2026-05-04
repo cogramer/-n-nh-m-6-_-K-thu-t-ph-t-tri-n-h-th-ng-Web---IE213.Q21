@@ -1,4 +1,4 @@
-import api from "./api"; // Instance axios của bạn
+import api from "./api"; // Shared axios instance
 
 const ContactService = {
   /**

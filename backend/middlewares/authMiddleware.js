@@ -16,7 +16,7 @@ const authenticateToken = (req, res, next) => {
   }
 };
 
-// Optional: middleware phân quyền admin
+// Optional admin authorization middleware
 export const requireAdmin = (req, res, next) => {
   if (!req.user?.isadmin) {
     return res.status(403).json({ message: "Admin permission required" });

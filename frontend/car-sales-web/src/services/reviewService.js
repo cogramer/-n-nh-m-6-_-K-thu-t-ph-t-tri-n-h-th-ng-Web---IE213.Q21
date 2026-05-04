@@ -1,4 +1,4 @@
-import api from "./api"; // Instance axios dùng chung
+import api from "./api"; // Shared axios instance
 
 const ReviewService = {
   /**

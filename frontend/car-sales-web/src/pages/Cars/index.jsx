@@ -1,5 +1,5 @@
 import { useMemo, useState, useEffect, useCallback, useRef } from "react";
-import { Link } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
 import Notification from "../../components/Notification/Notification";
@@ -14,6 +14,11 @@ import porscheLogo from "../../assets/icon/porsche.png";
 import toyotaLogo from "../../assets/icon/toyota.png";
 import vinfastLogo from "../../assets/icon/vinfast.png";
 import { useCart } from "../../context/CartContext";
+import {
+  getProductHeroImagePath,
+  PLACEHOLDER_IMAGE_URL,
+  resolveImageUrl,
+} from "../../utils/imageUrl";
 
 const BRAND_LOGOS = {
   BMW: bmwLogo,
@@ -24,6 +29,25 @@ const BRAND_LOGOS = {
   Toyota: toyotaLogo,
   Vinfast: vinfastLogo,
   VinFast: vinfastLogo,
+};
+
+const CARS_PAGE_SIZE = 5;
+
+const getPageFromSearchParams = (searchParams) => {
+  const pageValue = Number(searchParams.get("page"));
+  return Number.isInteger(pageValue) && pageValue > 0 ? pageValue : 1;
+};
+
+const withPageSearchParam = (searchParams, page) => {
+  const nextSearchParams = new URLSearchParams(searchParams);
+
+  if (page <= 1) {
+    nextSearchParams.delete("page");
+  } else {
+    nextSearchParams.set("page", String(page));
+  }
+
+  return nextSearchParams;
 };
 
 const getAuthToken = () => {
@@ -48,12 +72,6 @@ const getProductIdFromWishlistItem = (item) => {
     item?.product?._id ||
     item?.productId?._id
   );
-};
-
-const getImageSrc = (src) => {
-  if (!src) return "/images/car.webp";
-  if (/^(https?:|data:|blob:)/i.test(src)) return src;
-  return src.startsWith("/") ? src : `/${src}`;
 };
 
 function DualRange({
@@ -290,6 +308,7 @@ function IconPin() {
 
 function Cars() {
   const notifyRef = useRef();
+  const [searchParams, setSearchParams] = useSearchParams();
 
   const [carsList, setCarsList] = useState([]);
   const [wishlistIds, setWishlistIds] = useState([]);
@@ -309,13 +328,18 @@ function Cars() {
   const [featureQuery, setFeatureQuery] = useState("");
   const [selectedFeatures, setSelectedFeatures] = useState([]);
   const [showAllFeatures, setShowAllFeatures] = useState(false);
-  const [page, setPage] = useState(1);
+  const [page, setPage] = useState(() => getPageFromSearchParams(searchParams));
   const [loading, setLoading] = useState(true);
   const { addToCart } = useCart();
 
   const showNotification = (title, message, type = "info") => {
     notifyRef.current?.showNotification(title, message, type);
   };
+
+  const handleImageError = useCallback((event) => {
+    event.currentTarget.onerror = null;
+    event.currentTarget.src = PLACEHOLDER_IMAGE_URL;
+  }, []);
 
   const fetchWishlist = useCallback(async () => {
     const token = getAuthToken();
@@ -438,6 +462,14 @@ function Cars() {
   useEffect(() => {
     fetchWishlist();
   }, [fetchWishlist]);
+
+  useEffect(() => {
+    const pageFromUrl = getPageFromSearchParams(searchParams);
+
+    setPage((currentPage) =>
+      currentPage === pageFromUrl ? currentPage : pageFromUrl
+    );
+  }, [searchParams]);
 
   useEffect(() => {
     const handleWishlistChange = () => {
@@ -660,14 +692,32 @@ function Cars() {
     selectedFeatures,
   ]);
 
-  const pageSize = 5;
-  const totalPages = Math.max(1, Math.ceil(filteredCars.length / pageSize));
+  const totalPages = Math.max(
+    1,
+    Math.ceil(filteredCars.length / CARS_PAGE_SIZE)
+  );
   const safePage = Math.min(page, totalPages);
-  const startIndex = (safePage - 1) * pageSize;
-  const visibleCars = filteredCars.slice(startIndex, startIndex + pageSize);
+  const startIndex = (safePage - 1) * CARS_PAGE_SIZE;
+  const visibleCars = filteredCars.slice(
+    startIndex,
+    startIndex + CARS_PAGE_SIZE
+  );
 
   const heroCar = visibleCars[0] || filteredCars[0] || carsList[0];
-  const heroImage = getImageSrc(heroCar?.heroImage || heroCar?.thumbnailImage);
+  const heroImage = resolveImageUrl(getProductHeroImagePath(heroCar));
+
+  useEffect(() => {
+    if (loading) return;
+
+    const pageFromUrl = getPageFromSearchParams(searchParams);
+
+    // Keep the page in the URL so returning from a detail page restores the same result page.
+    if (pageFromUrl !== safePage) {
+      setSearchParams(withPageSearchParam(searchParams, safePage), {
+        replace: true,
+      });
+    }
+  }, [loading, safePage, searchParams, setSearchParams]);
 
   const priceText = (value) => {
     if (typeof value !== "number") return null;
@@ -709,11 +759,7 @@ function Cars() {
                 alt={heroCar?.name || "Hero car"}
                 loading="eager"
                 decoding="async"
-                onError={(event) => {
-                  event.currentTarget.onerror = null;
-                  event.currentTarget.src =
-                    "/images/vinfast/vinfast-vf8/hero/vf8-hero.webp";
-                }}
+                onError={handleImageError}
               />
             </div>
           </div>
@@ -1052,7 +1098,7 @@ function Cars() {
                     ? chipItems
                     : chipItems.slice(0, 4);
                   const remaining = Math.max(0, chipItems.length - 4);
-                  const cardImage = getImageSrc(car.thumbnailImage);
+                  const cardImage = resolveImageUrl(car.thumbnailImage);
                   const isWishlisted = wishlistIds.includes(String(car._id));
                   const stock = Number(car?.stock) || 0;
                   const stockText =
@@ -1092,6 +1138,7 @@ function Cars() {
                             alt={car.name}
                             loading="lazy"
                             decoding="async"
+                            onError={handleImageError}
                           />
                         </div>
                       </Link>

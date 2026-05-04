@@ -9,26 +9,26 @@ import mongoose from "mongoose";
 */
 const reviewSchema = new mongoose.Schema({
 
-    // Tham chiếu tới Product (_id của Product)
-    // Dùng ObjectId vì _id của MongoDB có kiểu ObjectId
-    // ref: 'Product' để có thể dùng populate()
+    // Reference the Product _id
+    // Use ObjectId because MongoDB _id values are ObjectIds
+    // ref: Product enables populate()
     productId: { type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true },
 
-    // Tham chiếu tới User (_id của User)
-    // Cho phép biết user nào đã viết review
+    // Reference the User _id
+    // Track which user wrote the review
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
 
-    // Điểm đánh giá (1 - 5)
-    // min / max giúp validate dữ liệu
+    // Review rating from 1 to 5
+    // min/max validate the rating range
     rating: { type: Number, required: true, min: 1, max: 5 },
 
-    // Nội dung nhận xét (không bắt buộc nhận xét)
+    // Optional review comment
     comment: { type: String, trim: true }, 
 
 }, { 
-    // Tự động thêm:
-    // createdAt → thời điểm tạo review
-    // updatedAt → thời điểm chỉnh sửa review
+    // Automatically add timestamps
+    // Create the review
+    // updatedAt -> review update time
     timestamps: true 
 });
 
@@ -47,5 +47,5 @@ reviewSchema.index(
 );
 
 
-// Xuất model để sử dụng trong controller
+// Export the model for controllers
 export default mongoose.model("Review", reviewSchema);

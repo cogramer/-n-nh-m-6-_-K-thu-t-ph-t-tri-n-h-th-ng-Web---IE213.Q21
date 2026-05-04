@@ -24,7 +24,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 
-// Kết nối Database
+// Connect to the database
 connectDB();
 
 const deployedOrigins = [
@@ -58,7 +58,7 @@ const isAllowedDevOrigin = (origin) => {
   }
 };
 
-// Middleware cơ bản
+// Base middleware
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -92,7 +92,7 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Cấu hình Session
+// Session configuration
 app.use(
   session({
     secret: process.env.SESSION_SECRET || "your_secret_key",
@@ -102,11 +102,11 @@ app.use(
   })
 );
 
-// Khởi tạo Passport
+// Initialize Passport
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Phục vụ file tĩnh (Xem ảnh)
+// Serve static image files
 app.use("/images", express.static(path.join(__dirname, "public/images")));
 
 app.get("/", (req, res) => {
@@ -141,7 +141,7 @@ app.use("/api/orders", OrderRoutes);
 app.use("/api/dashboard", DashboardRoutes);
 app.use("/api/wallets", WalletRoutes);
 
-// Middleware xử lý lỗi tập trung
+// Centralized error handling middleware
 app.use((err, req, res, next) => {
   res.status(err.status || err.statusCode || 500).json({
     message: err.message || "Lỗi Server nội bộ",

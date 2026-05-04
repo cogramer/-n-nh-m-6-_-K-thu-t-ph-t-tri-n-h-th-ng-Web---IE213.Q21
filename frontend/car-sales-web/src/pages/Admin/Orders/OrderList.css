@@ -4,7 +4,7 @@
 ========================================================= */
 
 .order-list-container {
-  /* Khai báo biến màu sắc dùng riêng cho component này */
+  /* Declare color variables for this component */
   --primary: #2563eb;
   --primary-hover: #1d4ed8;
   --success: #059669;
@@ -70,7 +70,7 @@
 /* --- TABLE MAIN --- */
 .order-list-container .table-responsive {
   overflow-x: auto;
-  /* Cuộn ngang nếu màn hình nhỏ */
+  /* Allow horizontal scrolling on small screens */
 }
 
 .order-list-container .admin-table {
@@ -106,12 +106,12 @@
   background-color: #f0f9ff;
 }
 
-/* --- BADGES (Trạng thái) --- */
+/* Badges (status) */
 .order-list-container .badge {
   display: inline-block;
   padding: 4px 10px;
   border-radius: 9999px;
-  /* Bo tròn hoàn toàn */
+  /* Fully rounded */
   font-size: 0.75rem;
   font-weight: 600;
   white-space: nowrap;
@@ -215,10 +215,10 @@
   color: var(--text-main);
 }
 
-/* --- EXPANDED DETAILS (Chi tiết đổ xuống) --- */
+/* Expanded details */
 .order-list-container .detail-row td {
   padding: 0;
-  /* Xóa padding mặc định của thẻ td */
+  /* Remove default td padding */
   border-bottom: 2px solid var(--border);
 }
 

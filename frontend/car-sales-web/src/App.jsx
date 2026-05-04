@@ -34,7 +34,7 @@ const PrivacyPolicy = lazy(() =>
   import("./pages/PrivacyPolicy/PrivacyPolicy")
 );
 
-// --- 1. PROTECTED ROUTE (Cho User đã đăng nhập) ---
+// Protected route for authenticated users
 const PrivateRoute = ({ children }) => {
   const authenticated = isAuthenticated();
 
@@ -53,7 +53,7 @@ const PrivateRoute = ({ children }) => {
 
 const PageFallback = () => <div>Dang tai trang...</div>;
 
-// --- 2. ADMIN ROUTE (Check quyền qua API) ---
+// Admin route with API role validation
 const AdminRoute = ({ children }) => {
   const [isAdmin, setIsAdmin] = useState(null);
 

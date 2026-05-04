@@ -162,7 +162,7 @@
   overflow-y: auto;
 }
 
-/* ẨN CHỮ KHI COLLAPSE */
+/* Hide text when collapsed */
 .sidebar-collapsed .sidebar-nav span,
 .sidebar-collapsed .sidebar-footer span,
 .sidebar-collapsed .brand-name {

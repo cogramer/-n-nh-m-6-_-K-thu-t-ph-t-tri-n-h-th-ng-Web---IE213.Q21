@@ -962,7 +962,7 @@
   border-radius: 5px;
   cursor: pointer;
   aspect-ratio: 1 / 1;
-  /* Cố định tỉ lệ 1:1 */
+  /* Lock a 1:1 aspect ratio */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -977,25 +977,25 @@
 
 .add-to-cart:hover {
   background-color: #3080F8;
-  /* Đổi sang màu xanh thương hiệu khi hover */
+  /* Switch to brand blue on hover */
   transform: translateY(-2px);
-  /* Nhấc nút lên một chút tạo chiều sâu */
+  /* Lift the button slightly for depth */
   box-shadow: 0 4px 12px rgba(48, 128, 248, 0.3);
-  /* Đổ bóng nhẹ cùng tông màu */
+  /* Use a subtle same-color shadow */
 }
 
-/* Hiệu ứng cho icon bên trong khi hover */
+/* Hover effect for the inner icon */
 .add-to-cart:hover img {
   transform: scale(1.15) rotate(-5deg);
-  /* Phóng to và xoay nhẹ icon cho sinh động */
+  /* Slightly enlarge and rotate the icon */
 }
 
-/* Hiệu ứng khi nhấn vào (Active) */
+/* Active press effect */
 .add-to-cart:active {
   transform: translateY(0);
-  /* Nút lún xuống khi bấm */
+  /* Button sinks slightly when pressed */
   filter: brightness(0.9);
-  /* Làm tối màu đi một chút */
+  /* Darken slightly */
 }
 
 .add-to-cart:disabled {
@@ -1019,7 +1019,7 @@
    RESPONSIVE IMPROVED
 =============================== */
 
-/* Desktop nhỏ / tablet ngang */
+/* Small desktop / landscape tablet breakpoint */
 @media (max-width: 1200px) {
   .cars-page {
     zoom: 1;
@@ -1095,7 +1095,7 @@
   }
 }
 
-/* Mobile lớn */
+/* Large mobile breakpoint */
 @media (max-width: 768px) {
   .cars-page {
     zoom: 1;
@@ -1195,7 +1195,7 @@
   }
 }
 
-/* Mobile nhỏ */
+/* Small mobile breakpoint */
 @media (max-width: 576px) {
   .cars-hero-text h1 {
     font-size: 28px;
@@ -1266,7 +1266,7 @@
   }
 }
 
-/* Mobile cực nhỏ */
+/* Extra-small mobile breakpoint */
 @media (max-width: 400px) {
   .cars-layout,
   .cars-hero-inner {
