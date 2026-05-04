@@ -24,6 +24,16 @@ const AdminContactList = lazy(() =>
   import("./pages/Admin/Contacts/ContactList")
 );
 
+// New public pages
+const Services = lazy(() => import("./pages/Services/Services"));
+const Support = lazy(() => import("./pages/Support/Support"));
+const TermsConditions = lazy(() =>
+  import("./pages/TermsConditions/TermsConditions")
+);
+const PrivacyPolicy = lazy(() =>
+  import("./pages/PrivacyPolicy/PrivacyPolicy")
+);
+
 // --- 1. PROTECTED ROUTE (Cho User đã đăng nhập) ---
 const PrivateRoute = ({ children }) => {
   const authenticated = isAuthenticated();
@@ -126,11 +136,21 @@ function App() {
               path="/reset-password"
               element={<Auth initialMode="reset" />}
             />
+
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
             <Route path="/cars" element={<Cars />} />
             <Route path="/product/:id" element={<CarDetail />} />
             <Route path="/contact" element={<Contact />} />
+
+            {/* STATIC PUBLIC PAGES */}
+            <Route path="/services" element={<Services />} />
+            <Route path="/support" element={<Support />} />
+            <Route
+              path="/terms-and-conditions"
+              element={<TermsConditions />}
+            />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
             {/* PRIVATE */}
             <Route
