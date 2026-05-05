@@ -34,6 +34,11 @@ const getProductId = (itemOrProductId) => {
   return itemOrProductId._id || null;
 };
 
+const getErrorMessage = (error, fallback) =>
+  error?.response?.data?.message ||
+  error?.message ||
+  fallback;
+
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -96,9 +101,20 @@ export const CartProvider = ({ children }) => {
       }
 
       const productId = getProductId(car);
+      const stock = Number(car?.stock ?? car?.productId?.stock);
 
       if (!productId) {
         throw new Error("Không tìm thấy productId");
+      }
+
+      if (Number.isFinite(stock) && stock <= 0) {
+        alert("Sản phẩm đã hết hàng, không thể thêm vào giỏ.");
+        return;
+      }
+
+      if (Number.isFinite(stock) && Number(quantity) > stock) {
+        alert(`Chỉ còn ${stock} xe trong kho.`);
+        return;
       }
 
       setLoading(true);
@@ -111,7 +127,7 @@ export const CartProvider = ({ children }) => {
 
       console.log("Đã đồng bộ Add to Cart lên Backend");
     } catch (error) {
-      alert("Lỗi khi thêm vào giỏ: " + (error?.message || "Unknown error"));
+      alert("Lỗi khi thêm vào giỏ: " + getErrorMessage(error, "Unknown error"));
     } finally {
       setLoading(false);
     }
@@ -182,6 +198,7 @@ export const CartProvider = ({ children }) => {
     } catch (error) {
       console.error("Lỗi cập nhật số lượng:", error);
       await fetchCart();
+      throw error;
     }
   };
 

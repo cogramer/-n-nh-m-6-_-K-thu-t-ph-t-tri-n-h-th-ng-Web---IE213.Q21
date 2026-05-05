@@ -13,6 +13,7 @@ Saigon Speed là website mua bán xe kết hợp React, Express, MongoDB và Eth
 - [Checkout và blockchain](#checkout-và-blockchain)
 - [Cài đặt](#cài-đặt)
 - [Biến môi trường](#biến-môi-trường)
+- [Deploy và verify smart contract](#deploy-và-verify-smart-contract)
 - [Tài liệu API](#tài-liệu-api)
 - [Lưu ý khi test Metamask](#lưu-ý-khi-test-metamask)
 
@@ -198,6 +199,101 @@ Tạo file từ template nếu cần compile/deploy/verify contract:
 cd blockchain
 cp .env.example .env
 ```
+
+```env
+SEPOLIA_RPC_URL=https://sepolia.infura.io/v3/<your-infura-project-id>
+SEPOLIA_PRIVATE_KEY=replace_with_deployer_or_seller_private_key_without_0x
+ETHERSCAN_API_KEY=replace_with_etherscan_api_key
+CONTRACT_ADDRESS=0xD0CF607f0bCD60B5ed02896e682450eA4dBf5BB0
+```
+
+`SEPOLIA_PRIVATE_KEY` là private key của ví deployer/seller, không có tiền tố `0x`. Ví này nên trùng với `SELLER_WALLET` trong backend để admin có thể tạo, xác nhận và hủy order on-chain.
+
+## Deploy và verify smart contract
+
+Smart contract chính nằm tại `blockchain/contracts/VehicleMarketplaceEscrow.sol`. Phần blockchain dùng Hardhat 3, Solidity `0.8.28`, network Sepolia và plugin `@nomicfoundation/hardhat-verify`.
+
+### 1. Cài đặt package
+
+```bash
+cd blockchain
+npm install
+```
+
+### 2. Cấu hình `.env`
+
+Tạo file môi trường từ template:
+
+```bash
+cp .env.example .env
+```
+
+Cập nhật các giá trị sau:
+
+```env
+SEPOLIA_RPC_URL=your_sepolia_rpc_url
+SEPOLIA_PRIVATE_KEY=private_key_of_deployer_or_seller_wallet_without_0x
+ETHERSCAN_API_KEY=your_etherscan_api_key
+```
+
+Lưu ý bảo mật: không commit private key, RPC project ID hoặc Etherscan API key lên repository.
+
+### 3. Compile contract
+
+```bash
+npx hardhat compile
+```
+
+Lệnh này kiểm tra Solidity source và sinh artifact/ABI trong thư mục `blockchain/artifacts`.
+
+### 4. Deploy lên Sepolia
+
+```bash
+npx hardhat run scripts/deploy.js --network sepolia
+```
+
+Sau khi deploy thành công, terminal sẽ in ra địa chỉ contract:
+
+```text
+Contract deployed to: 0xYourContractAddress
+```
+
+Cập nhật địa chỉ mới vào các file môi trường:
+
+```env
+# backend/.env
+CONTRACT_ADDRESS=0xYourContractAddress
+
+# frontend/car-sales-web/.env
+VITE_CONTRACT_ADDRESS=0xYourContractAddress
+
+# blockchain/.env
+CONTRACT_ADDRESS=0xYourContractAddress
+```
+
+Ví dụ contract Sepolia đang được cấu hình trong project:
+
+```text
+0xD0CF607f0bCD60B5ed02896e682450eA4dBf5BB0
+```
+
+### 5. Verify contract trên Etherscan
+
+Contract hiện tại không có constructor parameter, vì vậy có thể verify trực tiếp bằng địa chỉ đã deploy:
+
+```bash
+npx hardhat verify --network sepolia 0xYourContractAddress
+```
+
+Nếu verify thành công, Etherscan sẽ hiển thị source code, compiler version và ABI của contract. Điều này giúp người dùng đối chiếu địa chỉ contract frontend/backend đang gọi với source code đã công khai.
+
+### 6. Checklist sau khi deploy
+
+- Kiểm tra `CONTRACT_ADDRESS` ở backend và `VITE_CONTRACT_ADDRESS` ở frontend có cùng một địa chỉ.
+- Restart backend và frontend sau khi đổi biến môi trường.
+- Chạy `npm test` trong thư mục `backend` để kiểm tra service tích hợp blockchain.
+- Chạy `npm test` trong thư mục `blockchain` để kiểm tra logic smart contract.
+- Test luồng checkout bằng ví buyer trên Sepolia, không dùng ví seller làm buyer.
 
 ## Tài liệu API
 

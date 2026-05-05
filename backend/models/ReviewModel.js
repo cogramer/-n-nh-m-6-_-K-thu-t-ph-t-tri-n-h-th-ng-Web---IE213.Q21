@@ -18,6 +18,12 @@ const reviewSchema = new mongoose.Schema({
     // Track which user wrote the review
     userId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
 
+    // Reference the completed order used to verify this purchase
+    orderId: { type: mongoose.Schema.Types.ObjectId, ref: 'Order' },
+
+    // Only verified purchase reviews are rendered publicly
+    verifiedPurchase: { type: Boolean, default: false, index: true },
+
     // Review rating from 1 to 5
     // min/max validate the rating range
     rating: { type: Number, required: true, min: 1, max: 5 },

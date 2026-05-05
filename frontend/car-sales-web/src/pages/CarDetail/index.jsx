@@ -8,7 +8,7 @@ import ReviewService from "../../services/reviewService";
 import "./CarDetail.css";
 import { useCart } from "../../context/CartContext";
 import add from "../../assets/icon/add.png";
-import { ChevronLeft, ChevronRight, X } from "lucide-react";
+import { ChevronLeft, ChevronRight, Pencil, X } from "lucide-react";
 import {
   getProductHeroImagePath,
   PLACEHOLDER_IMAGE_URL,
@@ -61,6 +61,12 @@ function CarDetail() {
   const [reviewSubmitting, setReviewSubmitting] = useState(false);
   const [reviewSubmitError, setReviewSubmitError] = useState("");
   const [reviewSubmitMessage, setReviewSubmitMessage] = useState("");
+  const [myReview, setMyReview] = useState(null);
+  const [editingReviewId, setEditingReviewId] = useState("");
+  const [editReviewRating, setEditReviewRating] = useState(5);
+  const [editReviewComment, setEditReviewComment] = useState("");
+  const [reviewEditSubmitting, setReviewEditSubmitting] = useState(false);
+  const [reviewEditError, setReviewEditError] = useState("");
 
   const fetchWishlistStatus = useCallback(async () => {
     const token = getAuthToken();
@@ -169,6 +175,27 @@ function CarDetail() {
     fetchReviews();
   }, [id]);
 
+  useEffect(() => {
+    const fetchMyReview = async () => {
+      const token = getAuthToken();
+
+      if (!id || !token) {
+        setMyReview(null);
+        return;
+      }
+
+      try {
+        const res = await ReviewService.getMyReviewByProductId(id);
+        setMyReview(res?.data || null);
+      } catch (error) {
+        console.error("Unable to load your review:", error);
+        setMyReview(null);
+      }
+    };
+
+    fetchMyReview();
+  }, [id]);
+
   const gallery = Array.isArray(car?.galleryImages) ? car.galleryImages : [];
   const activeGalleryImage =
     activeGalleryIndex !== null ? gallery[activeGalleryIndex] : "";
@@ -195,6 +222,10 @@ function CarDetail() {
 
   useEffect(() => {
     setActiveGalleryIndex(null);
+    setEditingReviewId("");
+    setEditReviewRating(5);
+    setEditReviewComment("");
+    setReviewEditError("");
   }, [id]);
 
   useEffect(() => {
@@ -384,19 +415,14 @@ function CarDetail() {
   const stock = Number(car?.stock) || 0;
   const stockText = stock <= 0 ? "Out of stock" : `${stock} left`;
 
-  const authToken = localStorage.getItem("authToken");
+  const authToken = getAuthToken();
   const authUsername = localStorage.getItem("authUsername") || "You";
 
-  const ratingValue = Number.isFinite(Number(car?.averageRating))
-    ? Number(car.averageRating)
-    : reviews.length
-      ? reviews.reduce((sum, item) => sum + Number(item?.rating || 0), 0) /
-        reviews.length
-      : 0;
-
-  const reviewCountValue = Number.isFinite(Number(car?.reviewCount))
-    ? Number(car.reviewCount)
-    : reviews.length;
+  const reviewCountValue = reviews.length;
+  const ratingValue = reviewCountValue
+    ? reviews.reduce((sum, item) => sum + Number(item?.rating || 0), 0) /
+      reviewCountValue
+    : 0;
 
   const ratingText = reviewCountValue
     ? `${ratingValue.toFixed(1)} / 5 (${reviewCountValue})`
@@ -419,6 +445,11 @@ function CarDetail() {
       return;
     }
 
+    if (myReview) {
+      setReviewSubmitError("You already reviewed this vehicle. Use the edit button on your review.");
+      return;
+    }
+
     const numericRating = Number(reviewRating);
 
     if (
@@ -433,12 +464,15 @@ function CarDetail() {
     try {
       setReviewSubmitting(true);
 
-      await ReviewService.createReview({
+      const reviewRes = await ReviewService.createReview({
         productId: id,
         rating: numericRating,
         comment: reviewComment?.trim() || "",
       });
+      const savedReview = reviewRes?.data || null;
 
+      setMyReview(savedReview);
+      setReviewRating(5);
       setReviewSubmitMessage("Review submitted successfully");
       setReviewComment("");
 
@@ -455,6 +489,67 @@ function CarDetail() {
       );
     } finally {
       setReviewSubmitting(false);
+    }
+  };
+
+  const startEditReview = (review) => {
+    setReviewSubmitError("");
+    setReviewSubmitMessage("");
+    setReviewEditError("");
+    setEditingReviewId(review?._id || "");
+    setEditReviewRating(Number(review?.rating) || 5);
+    setEditReviewComment(review?.comment || "");
+  };
+
+  const cancelEditReview = () => {
+    setEditingReviewId("");
+    setEditReviewRating(5);
+    setEditReviewComment("");
+    setReviewEditError("");
+  };
+
+  const submitEditReview = async (event) => {
+    event.preventDefault();
+    setReviewEditError("");
+
+    const numericRating = Number(editReviewRating);
+
+    if (
+      !Number.isFinite(numericRating) ||
+      numericRating < 1 ||
+      numericRating > 5
+    ) {
+      setReviewEditError("Rating must be between 1 and 5");
+      return;
+    }
+
+    try {
+      setReviewEditSubmitting(true);
+
+      const reviewRes = await ReviewService.createReview({
+        productId: id,
+        rating: numericRating,
+        comment: editReviewComment?.trim() || "",
+      });
+      const savedReview = reviewRes?.data || null;
+
+      setMyReview(savedReview);
+      setReviewSubmitMessage("Review updated successfully");
+      cancelEditReview();
+
+      const [product, reviewsRes] = await Promise.all([
+        ProductService.getProductById(id),
+        ReviewService.getReviewsByProductId(id),
+      ]);
+
+      setCar(product);
+      setReviews(Array.isArray(reviewsRes?.data) ? reviewsRes.data : []);
+    } catch (error) {
+      setReviewEditError(
+        error?.response?.data?.message || "Failed to update review"
+      );
+    } finally {
+      setReviewEditSubmitting(false);
     }
   };
 
@@ -529,9 +624,9 @@ function CarDetail() {
               ) : null}
 
               <button
-                className="add-to-cart"
+                className={`add-to-cart ${stock <= 0 ? "is-disabled" : ""}`}
                 onClick={() => addToCart(car)}
-                disabled={stock <= 0}
+                aria-disabled={stock <= 0}
                 title={stock <= 0 ? "Out of stock" : "Add to cart"}
               >
                 <img src={add} alt="Add to cart icon" />
@@ -798,14 +893,90 @@ function CarDetail() {
                       <div className="car-detail-review-item-top">
                         <div className="car-detail-review-item-user">
                           {review?.userId?.username || "User"}
+                          {review?.verifiedPurchase ? (
+                            <span>Verified purchase</span>
+                          ) : null}
                         </div>
 
-                        <div className="car-detail-review-item-stars">
-                          {renderStars(review?.rating)}
+                        <div className="car-detail-review-item-actions">
+                          <div className="car-detail-review-item-stars">
+                            {renderStars(review?.rating)}
+                          </div>
+
+                          {myReview?._id === review?._id ? (
+                            <button
+                              type="button"
+                              className="car-detail-review-edit-btn"
+                              onClick={() => startEditReview(review)}
+                              aria-label="Edit your review"
+                              title="Edit your review"
+                            >
+                              <Pencil size={15} />
+                            </button>
+                          ) : null}
                         </div>
                       </div>
 
-                      {review?.comment ? (
+                      {editingReviewId === review?._id ? (
+                        <form
+                          className="car-detail-review-edit-form"
+                          onSubmit={submitEditReview}
+                        >
+                          <label className="car-detail-review-rating">
+                            <span>Rating</span>
+
+                            <select
+                              value={editReviewRating}
+                              onChange={(event) =>
+                                setEditReviewRating(Number(event.target.value))
+                              }
+                              disabled={reviewEditSubmitting}
+                            >
+                              <option value={5}>5</option>
+                              <option value={4}>4</option>
+                              <option value={3}>3</option>
+                              <option value={2}>2</option>
+                              <option value={1}>1</option>
+                            </select>
+                          </label>
+
+                          <textarea
+                            className="car-detail-review-textarea"
+                            value={editReviewComment}
+                            onChange={(event) =>
+                              setEditReviewComment(event.target.value)
+                            }
+                            placeholder="Write your comment (optional)"
+                            rows={4}
+                            disabled={reviewEditSubmitting}
+                          />
+
+                          {reviewEditError ? (
+                            <div className="car-detail-review-error">
+                              {reviewEditError}
+                            </div>
+                          ) : null}
+
+                          <div className="car-detail-review-edit-actions">
+                            <button
+                              type="button"
+                              className="car-detail-review-cancel"
+                              onClick={cancelEditReview}
+                              disabled={reviewEditSubmitting}
+                            >
+                              Cancel
+                            </button>
+
+                            <button
+                              type="submit"
+                              className="car-detail-review-save"
+                              disabled={reviewEditSubmitting}
+                            >
+                              {reviewEditSubmitting ? "Saving..." : "Save changes"}
+                            </button>
+                          </div>
+                        </form>
+                      ) : review?.comment ? (
                         <div className="car-detail-review-item-comment">
                           {review.comment}
                         </div>

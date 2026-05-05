@@ -424,11 +424,11 @@ function Cars() {
   const handleAddToCart = (car) => {
     const stock = Number(car?.stock) || 0;
 
+    addToCart(car);
+
     if (stock <= 0) {
       return;
     }
-
-    addToCart(car);
 
     showNotification(
       "System Message",
@@ -1217,13 +1217,13 @@ function Cars() {
                       <div className="cars-item-price">
                         <button
                           type="button"
-                          className="add-to-cart"
+                          className={`add-to-cart ${stock <= 0 ? "is-disabled" : ""}`}
                           onClick={(e) => {
                             e.preventDefault();
                             e.stopPropagation();
                             handleAddToCart(car);
                           }}
-                          disabled={stock <= 0}
+                          aria-disabled={stock <= 0}
                           title={stock <= 0 ? "Out of stock" : "Add to cart"}
                           aria-label={
                             stock <= 0 ? "Out of stock" : "Add to cart"

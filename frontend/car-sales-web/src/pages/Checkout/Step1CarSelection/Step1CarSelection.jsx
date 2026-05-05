@@ -3,6 +3,7 @@ import { Link } from "react-router-dom";
 import {
   CheckCircle,
   Gauge,
+  Info,
   Minus,
   Plus,
   Scale,
@@ -45,6 +46,9 @@ function Step1CarSelection({
             const productId = product?._id;
             const quantity = Number(item.quantity || 1);
             const price = Number(item.price || product?.price || 0);
+            const stock = Number(product?.stock);
+            const hasStockLimit = Number.isFinite(stock);
+            const isAtStockLimit = hasStockLimit && quantity >= stock;
             const specs = product?.specifications || {};
             const isSelected = selectedIds.includes(cartItemId);
             const isLoading = Boolean(actionLoading[cartItemId]);
@@ -75,9 +79,20 @@ function Step1CarSelection({
                   if (!isLoading && cartItemId) toggleSelectCar(cartItemId);
                 }}
               >
-                <div className="vehicle-select-indicator">
+                <button
+                  type="button"
+                  className="vehicle-select-indicator"
+                  onClick={(event) => {
+                    event.preventDefault();
+                    event.stopPropagation();
+
+                    if (!isLoading && cartItemId) toggleSelectCar(cartItemId);
+                  }}
+                  disabled={isLoading || !cartItemId}
+                  aria-label={isSelected ? "Unselect vehicle" : "Select vehicle"}
+                >
                   {isSelected ? <CheckCircle size={18} /> : <span />}
-                </div>
+                </button>
 
                 <div className="vehicle-media">
                   <img
@@ -93,25 +108,39 @@ function Step1CarSelection({
                       <h3>{product?.name || "Unnamed vehicle"}</h3>
                     </div>
 
-                    <button
-                      type="button"
-                      className="vehicle-remove-btn"
-                      onClick={(event) => {
-                        event.preventDefault();
-                        event.stopPropagation();
+                    <div className="vehicle-actions">
+                      <Link
+                        to={productId ? `/product/${productId}` : "/cars"}
+                        className="vehicle-detail-btn"
+                        onClick={(event) => {
+                          event.stopPropagation();
+                        }}
+                        aria-label="View vehicle details"
+                        title="View vehicle details"
+                      >
+                        <Info size={17} />
+                      </Link>
 
-                        if (isLoading || !productId) return;
+                      <button
+                        type="button"
+                        className="vehicle-remove-btn"
+                        onClick={(event) => {
+                          event.preventDefault();
+                          event.stopPropagation();
 
-                        removeFromCart({
-                          cartItemId,
-                          productId,
-                        });
-                      }}
-                      disabled={isLoading || !productId}
-                      aria-label="Remove vehicle from cart"
-                    >
-                      <Trash2 size={17} />
-                    </button>
+                          if (isLoading || !productId) return;
+
+                          removeFromCart({
+                            cartItemId,
+                            productId,
+                          });
+                        }}
+                        disabled={isLoading || !productId}
+                        aria-label="Remove vehicle from cart"
+                      >
+                        <Trash2 size={17} />
+                      </button>
+                    </div>
                   </div>
 
                   <div className="vehicle-spec-grid">
@@ -149,12 +178,13 @@ function Step1CarSelection({
 
                       <button
                         type="button"
-                        disabled={isLoading || !productId}
+                        disabled={isLoading || !productId || isAtStockLimit}
+                        title={isAtStockLimit ? "Only available stock can be reserved" : "Increase quantity"}
                         onClick={(event) => {
                           event.preventDefault();
                           event.stopPropagation();
 
-                          if (isLoading || !productId) return;
+                          if (isLoading || !productId || isAtStockLimit) return;
 
                           updateQuantity({
                             cartItemId,

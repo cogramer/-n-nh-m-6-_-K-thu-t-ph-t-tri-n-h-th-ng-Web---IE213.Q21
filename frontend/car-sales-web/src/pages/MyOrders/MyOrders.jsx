@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Ban,
   CheckCircle2,
@@ -11,10 +12,12 @@ import {
   RefreshCw,
   Search,
   ShieldCheck,
+  Star,
   Wallet,
 } from "lucide-react";
 import Navbar from "../../components/Navbar/Navbar";
 import { orderService } from "../../services/orderService";
+import ReviewService from "../../services/reviewService";
 import { getBlockchainErrorMessage } from "../../utils/blockchainErrors";
 import {
   assertWalletCanSendTransaction,
@@ -92,6 +95,10 @@ const getOrderStatusKey = (order) =>
     ? "payment_paid"
     : order.status;
 
+const getItemProductId = (item) => item.productId?._id || item.productId;
+
+const getOrderReviewKey = (orderId, productId) => `${orderId}-${productId}`;
+
 function MyOrders() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
@@ -99,6 +106,8 @@ function MyOrders() {
   const [expandedOrderId, setExpandedOrderId] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [reviewDrafts, setReviewDrafts] = useState({});
+  const [reviewSavingKey, setReviewSavingKey] = useState("");
 
   const fetchOrders = async () => {
     try {
@@ -270,6 +279,64 @@ function MyOrders() {
   const canCancel = (order) =>
     ["pending_deposit", "pending_payment", "deposit_paid", "payment_paid"].includes(getOrderStatusKey(order));
 
+  const updateReviewDraft = (orderId, productId, field, value) => {
+    const key = getOrderReviewKey(orderId, productId);
+    setReviewDrafts((previous) => ({
+      ...previous,
+      [key]: {
+        rating: 5,
+        comment: "",
+        ...previous[key],
+        [field]: value,
+        saved: false,
+      },
+    }));
+  };
+
+  const handleSubmitReview = async (event, order, item) => {
+    event.preventDefault();
+
+    const productId = getItemProductId(item);
+    if (!productId) {
+      alert("This vehicle is no longer available for review.");
+      return;
+    }
+
+    const key = getOrderReviewKey(order._id, productId);
+    const draft = reviewDrafts[key] || { rating: 5, comment: "" };
+    const comment = String(draft.comment || "").trim();
+
+    if (!comment) {
+      alert("Please enter your review before saving.");
+      return;
+    }
+
+    try {
+      setReviewSavingKey(key);
+      await ReviewService.createReview({
+        productId,
+        orderId: order._id,
+        rating: Number(draft.rating) || 5,
+        comment,
+      });
+      setReviewDrafts((previous) => ({
+        ...previous,
+        [key]: {
+          ...previous[key],
+          rating: Number(draft.rating) || 5,
+          comment,
+          saved: true,
+        },
+      }));
+      alert("Review saved successfully.");
+    } catch (error) {
+      console.error("Failed to save review:", error);
+      alert(getErrorMessage(error));
+    } finally {
+      setReviewSavingKey("");
+    }
+  };
+
   return (
     <>
       <Navbar />
@@ -375,12 +442,25 @@ function MyOrders() {
                       <div>
                         <h3>Products</h3>
                         <ul className="order-items">
-                          {(order.items || []).map((item) => (
-                            <li key={`${item.productId}-${item.name}`}>
-                              <span>{item.name} x {item.quantity}</span>
-                              <strong>{formatCurrency(item.price)}</strong>
-                            </li>
-                          ))}
+                          {(order.items || []).map((item) => {
+                            const productId = getItemProductId(item);
+
+                            return (
+                              <li key={`${productId}-${item.name}`}>
+                                <span>
+                                  {productId ? (
+                                    <Link className="order-item-product-link" to={`/product/${productId}`}>
+                                      {item.name}
+                                    </Link>
+                                  ) : (
+                                    item.name
+                                  )}{" "}
+                                  x {item.quantity}
+                                </span>
+                                <strong>{formatCurrency(item.price)}</strong>
+                              </li>
+                            );
+                          })}
                         </ul>
                       </div>
 
@@ -408,6 +488,65 @@ function MyOrders() {
                           <p>TxHash: Not available</p>
                         )}
                       </div>
+
+                      {orderStatusKey === "completed" && (
+                        <div className="order-review-panel">
+                          <h3>Review your vehicle</h3>
+                          <div className="order-review-list">
+                            {(order.items || []).map((item) => {
+                              const productId = getItemProductId(item);
+                              const reviewKey = getOrderReviewKey(order._id, productId);
+                              const draft = reviewDrafts[reviewKey] || { rating: 5, comment: "" };
+                              const isSavingReview = reviewSavingKey === reviewKey;
+
+                              return (
+                                <form
+                                  className="order-review-item"
+                                  key={`review-${reviewKey}-${item.name}`}
+                                  onSubmit={(event) => handleSubmitReview(event, order, item)}
+                                >
+                                  <div className="order-review-heading">
+                                    <div>
+                                      <strong>{item.name}</strong>
+                                      <span>Verified purchase</span>
+                                    </div>
+                                    <label>
+                                      Rating
+                                      <select
+                                        value={draft.rating}
+                                        onChange={(event) =>
+                                          updateReviewDraft(order._id, productId, "rating", event.target.value)
+                                        }
+                                      >
+                                        {[5, 4, 3, 2, 1].map((value) => (
+                                          <option key={value} value={value}>
+                                            {value}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </label>
+                                  </div>
+                                  <textarea
+                                    value={draft.comment}
+                                    onChange={(event) =>
+                                      updateReviewDraft(order._id, productId, "comment", event.target.value)
+                                    }
+                                    placeholder="Share your experience with this vehicle..."
+                                    rows={3}
+                                  />
+                                  <div className="order-review-footer">
+                                    {draft.saved && <span>Review saved.</span>}
+                                    <button type="submit" disabled={isSavingReview || !productId}>
+                                      {isSavingReview ? <LoaderCircle className="spin-icon" size={16} /> : <Star size={16} />}
+                                      Save review
+                                    </button>
+                                  </div>
+                                </form>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </article>

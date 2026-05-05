@@ -20,7 +20,7 @@ const calcTotals = (items) => {
 export const getCartService = async (userId) => {
   const cart = await Cart.findOne({ userId }).populate(
     "items.productId",
-    "name price thumbnailImage specifications"
+    "name price thumbnailImage specifications stock"
   );
 
   if (!cart) {
@@ -36,15 +36,22 @@ export const getCartService = async (userId) => {
 // ================= ADD =================
 export const addToCartService = async (userId, body) => {
   const { productId, quantity = 1 } = body;
+  const requestedQuantity = Number(quantity);
 
   if (!productId) throw new Error("productId là bắt buộc");
-  if (quantity < 1) throw new Error("Số lượng phải ít nhất là 1");
+  if (!Number.isFinite(requestedQuantity) || requestedQuantity < 1) {
+    throw new Error("Số lượng phải ít nhất là 1");
+  }
 
   const product = await Product.findById(productId).select("price stock");
   if (!product) throw new Error("Sản phẩm không tồn tại");
 
   if (product.stock === 0) {
     throw new Error("Sản phẩm đã hết hàng");
+  }
+
+  if (requestedQuantity > product.stock) {
+    throw new Error(`Chỉ còn ${product.stock} xe trong kho`);
   }
 
   // FIX: use returnDocument instead of new
@@ -59,12 +66,17 @@ export const addToCartService = async (userId, body) => {
   );
 
   if (index >= 0) {
-    const newQuantity = cart.items[index].quantity + quantity;
+    const newQuantity = cart.items[index].quantity + requestedQuantity;
+
+    if (newQuantity > product.stock) {
+      throw new Error(`Chỉ còn ${product.stock} xe trong kho`);
+    }
+
     cart.items[index].quantity = newQuantity;
   } else {
     cart.items.push({
       productId,
-      quantity,
+      quantity: requestedQuantity,
       price: product.price,
     });
   }
@@ -75,7 +87,7 @@ export const addToCartService = async (userId, body) => {
 
   await cart.save();
 
-  await cart.populate("items.productId", "name price thumbnailImage specifications");
+  await cart.populate("items.productId", "name price thumbnailImage specifications stock");
 
   return cart;
 };
@@ -83,8 +95,9 @@ export const addToCartService = async (userId, body) => {
 // ================= UPDATE =================
 export const updateCartItemService = async (userId, productId, body) => {
   const { quantity } = body;
+  const requestedQuantity = Number(quantity);
 
-  if (!quantity || quantity < 1) {
+  if (!Number.isFinite(requestedQuantity) || requestedQuantity < 1) {
     throw new Error("Số lượng phải ít nhất là 1");
   }
 
@@ -98,13 +111,17 @@ export const updateCartItemService = async (userId, productId, body) => {
     throw new Error("Sản phẩm đã hết hàng");
   }
 
+  if (requestedQuantity > product.stock) {
+    throw new Error(`Chỉ còn ${product.stock} xe trong kho`);
+  }
+
   const index = cart.items.findIndex(
     (item) => item.productId.toString() === productId
   );
 
   if (index === -1) throw new Error("Sản phẩm không có trong giỏ");
 
-  cart.items[index].quantity = quantity;
+  cart.items[index].quantity = requestedQuantity;
 
   const { totalPrice, totalItems } = calcTotals(cart.items);
   cart.totalPrice = totalPrice;
@@ -112,7 +129,7 @@ export const updateCartItemService = async (userId, productId, body) => {
 
   await cart.save();
 
-  await cart.populate("items.productId", "name price thumbnailImage specifications");
+  await cart.populate("items.productId", "name price thumbnailImage specifications stock");
 
   return cart;
 };
@@ -132,7 +149,7 @@ export const removeCartItemService = async (userId, productId) => {
 
   await cart.save();
 
-  await cart.populate("items.productId", "name price thumbnailImage specifications");
+  await cart.populate("items.productId", "name price thumbnailImage specifications stock");
 
   return cart;
 };
@@ -169,5 +186,5 @@ export const clearCartService = async (userId) => {
 export const getAllCartsService = async () => {
   return await Cart.find()
     .populate("userId", "username email")
-    .populate("items.productId", "name price thumbnailImage specifications");
+    .populate("items.productId", "name price thumbnailImage specifications stock");
 };

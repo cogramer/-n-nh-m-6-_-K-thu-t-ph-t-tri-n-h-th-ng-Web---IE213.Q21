@@ -27,13 +27,9 @@ function CarCard({
     e.preventDefault();
     e.stopPropagation();
 
-    if (stock <= 0) {
-      return;
-    }
-
     addToCart(car);
 
-    if (onAddToCartSuccess) {
+    if (stock > 0 && onAddToCartSuccess) {
       onAddToCartSuccess(car);
     }
   };
@@ -89,9 +85,9 @@ function CarCard({
 
         <button
           type="button"
-          className="add-to-cart"
+          className={`add-to-cart ${stock <= 0 ? "is-disabled" : ""}`}
           onClick={handleAddToCart}
-          disabled={stock <= 0}
+          aria-disabled={stock <= 0}
           title={stock <= 0 ? "Out of stock" : "Add to cart"}
           aria-label={stock <= 0 ? "Out of stock" : "Add to cart"}
         >

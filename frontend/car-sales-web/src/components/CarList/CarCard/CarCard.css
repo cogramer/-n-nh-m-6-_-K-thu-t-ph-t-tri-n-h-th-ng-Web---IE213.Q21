@@ -216,20 +216,23 @@
   filter: brightness(0.9);
 }
 
-.add-to-cart:disabled {
+.add-to-cart:disabled,
+.add-to-cart.is-disabled {
   opacity: 0.45;
-  cursor: not-allowed;
+  cursor: pointer;
   transform: none;
   box-shadow: none;
 }
 
-.add-to-cart:disabled:hover {
+.add-to-cart:disabled:hover,
+.add-to-cart.is-disabled:hover {
   background: #cbd5e0;
   transform: none;
   box-shadow: none;
 }
 
-.add-to-cart:disabled:hover img {
+.add-to-cart:disabled:hover img,
+.add-to-cart.is-disabled:hover img {
   transform: none;
 }
 
