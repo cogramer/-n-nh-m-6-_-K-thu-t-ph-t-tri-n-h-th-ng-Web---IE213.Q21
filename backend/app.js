@@ -7,6 +7,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import passport from "./config/passport.js";
 import connectDB from "./config/db.js";
+import { getRequiredSecret } from "./config/secrets.js";
 
 // Import Routes
 import ProductRoutes from "./routes/Product.js";
@@ -23,6 +24,9 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+getRequiredSecret("JWT_SECRET");
+getRequiredSecret("JWT_REFRESH_SECRET");
+const sessionSecret = getRequiredSecret("SESSION_SECRET");
 
 // Connect to the database
 connectDB();
@@ -95,7 +99,7 @@ app.use(cookieParser());
 // Session configuration
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "your_secret_key",
+    secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
     cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 },

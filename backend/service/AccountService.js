@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
-import jwt from "jsonwebtoken";
 import User from "../models/AuthModel.js";
+import { getRequiredSecret } from "../config/secrets.js";
 import { verifyToken } from "../utils/jwtUtils.js";
 
 export const changePasswordService = async ({ email, oldPassword, newPassword, resNewPassword }) => {
@@ -38,7 +38,7 @@ export const getProfileService = async (userId) => {
 export const editProfileService = async (token, data) => {
   if (!token) throw new Error("Token is required");
 
-  const decoded = verifyToken(token, process.env.JWT_SECRET);
+  const decoded = verifyToken(token, getRequiredSecret("JWT_SECRET"));
   if (!decoded) throw new Error("Invalid token");
 
   // Only allow safe fields to be edited by users
@@ -56,7 +56,7 @@ export const editProfileService = async (token, data) => {
 
 
 export const updateUserService = async (token, body) => {
-  const decoded = verifyToken(token, process.env.JWT_SECRET || "default_secret_key");
+  const decoded = verifyToken(token, getRequiredSecret("JWT_SECRET"));
   if (!decoded) throw new Error("Invalid token");
 
   const userId = decoded.id;
@@ -88,7 +88,7 @@ export const updateUserService = async (token, body) => {
 
 export const deleteUserService = async (token, idParam) => {
 
-  const decoded = verifyToken(token, process.env.JWT_SECRET || "default_secret_key");
+  const decoded = verifyToken(token, getRequiredSecret("JWT_SECRET"));
   if (!decoded) throw new Error("Invalid token");
 
   const userIdFromToken = decoded.id;
