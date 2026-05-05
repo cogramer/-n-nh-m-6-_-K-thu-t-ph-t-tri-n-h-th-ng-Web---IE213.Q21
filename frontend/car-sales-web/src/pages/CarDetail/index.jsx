@@ -1,7 +1,8 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useRef } from "react";
 import { Link, useParams } from "react-router-dom";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
+import Notification from "../../components/Notification/Notification";
 import ProductService from "../../services/ProductService";
 import AccountService from "../../services/accountService";
 import ReviewService from "../../services/reviewService";
@@ -47,6 +48,12 @@ function CarDetail() {
   const [activeGalleryIndex, setActiveGalleryIndex] = useState(null);
   const [isWishlisted, setIsWishlisted] = useState(false);
   const { addToCart } = useCart();
+  
+  const notifyRef = useRef(null);
+
+  const showNotification = (title, message, type = "info") => {
+    notifyRef.current?.showNotification(title, message, type);
+  };
 
   const handleImageError = useCallback((event) => {
     event.currentTarget.onerror = null;
@@ -93,29 +100,66 @@ function CarDetail() {
   }, [id]);
 
   const handleToggleWishlist = async () => {
-    const token = getAuthToken();
+  const token = getAuthToken();
 
-    if (!token) {
-      alert("Please log in to add this car to your wishlist.");
-      return;
+  if (!token) {
+    showNotification(
+        "System Message",
+        "Please log in to add cars to your wishlist.",
+        "warning"
+      );
+    return;
+  }
+
+  const nextState = !isWishlisted;
+  setIsWishlisted(nextState);
+
+  try {
+    if (isWishlisted) {
+      await AccountService.removeFromWishlist(id);
+      showNotification(
+          "System Message",
+          "Removed from your wishlist.",
+          "success"
+        );
+    } else {
+      await AccountService.addToWishlist(id);
+      showNotification(
+          "System Message",
+          "Added to your wishlist.",
+          "success"
+        );
     }
 
-    const nextState = !isWishlisted;
-    setIsWishlisted(nextState);
+    window.dispatchEvent(new Event("wishlist-change"));
+  } catch (error) {
+    console.error("Failed to update wishlist:", error);
+    setIsWishlisted(!nextState);
+    showNotification(
+        "System Message",
+        "Unable to update your wishlist. Please try again.",
+        "error"
+      );
+  }
+};
 
-    try {
-      if (isWishlisted) {
-        await AccountService.removeFromWishlist(id);
-      } else {
-        await AccountService.addToWishlist(id);
-      }
+const handleAddToCart = () => {
+  if (stock <= 0) {
+    showNotification(
+          "System Message",
+          "This car is out of stock.",
+          "error"
+        );
+    return;
+  }
 
-      window.dispatchEvent(new Event("wishlist-change"));
-    } catch (error) {
-      console.error("Failed to update wishlist:", error);
-      setIsWishlisted(!nextState);
-    }
-  };
+  addToCart(car);
+  showNotification(
+      "System Message",
+      `${car?.name || "Car"} has been added to your cart.`,
+      "success"
+    );
+};
 
   useEffect(() => {
     const fetchProduct = async () => {
@@ -555,6 +599,7 @@ function CarDetail() {
 
   return (
     <>
+    <Notification ref={notifyRef} />
       <Navbar />
 
       <main className="car-detail">
@@ -625,7 +670,8 @@ function CarDetail() {
 
               <button
                 className={`add-to-cart ${stock <= 0 ? "is-disabled" : ""}`}
-                onClick={() => addToCart(car)}
+                onClick={handleAddToCart}
+                disabled={stock <= 0}
                 aria-disabled={stock <= 0}
                 title={stock <= 0 ? "Out of stock" : "Add to cart"}
               >

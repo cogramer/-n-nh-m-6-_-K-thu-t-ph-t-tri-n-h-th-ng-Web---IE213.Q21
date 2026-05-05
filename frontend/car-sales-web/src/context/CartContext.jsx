@@ -1,5 +1,6 @@
-import { createContext, useState, useContext, useEffect, useCallback, useMemo } from 'react';
+import { createContext, useState, useContext, useEffect, useCallback, useMemo, useRef } from 'react';
 import cartService from '../services/cartService';
+import Notification from '../components/Notification/Notification';
 
 const CartContext = createContext();
 
@@ -42,6 +43,12 @@ const getErrorMessage = (error, fallback) =>
 export const CartProvider = ({ children }) => {
   const [cartItems, setCartItems] = useState([]);
   const [loading, setLoading] = useState(false);
+
+  const notifyRef = useRef(null);
+
+  const showNotification = (title, message, type = "info") => {
+    notifyRef.current?.showNotification(title, message, type);
+  };
 
   const fetchCart = useCallback(async () => {
     const token = localStorage.getItem("authToken");
@@ -96,7 +103,7 @@ export const CartProvider = ({ children }) => {
       const token = localStorage.getItem("authToken");
 
       if (!token) {
-        alert("Vui lòng đăng nhập để thêm vào giỏ hàng");
+        showNotification("System Message", "Please log in to add items to your cart.", "error");
         return;
       }
 
@@ -104,16 +111,18 @@ export const CartProvider = ({ children }) => {
       const stock = Number(car?.stock ?? car?.productId?.stock);
 
       if (!productId) {
-        throw new Error("Không tìm thấy productId");
+        throw new Error("Cannot determine product ID for cart item.");
       }
 
       if (Number.isFinite(stock) && stock <= 0) {
-        alert("Sản phẩm đã hết hàng, không thể thêm vào giỏ.");
+        //alert("Sản phẩm đã hết hàng, không thể thêm vào giỏ. tesst");
+        showNotification("System Message", "This product is out of stock.", "error");
         return;
       }
 
       if (Number.isFinite(stock) && Number(quantity) > stock) {
-        alert(`Chỉ còn ${stock} xe trong kho.`);
+        //alert(`Chỉ còn ${stock} xe trong kho.`);
+        showNotification("System Message", `Only ${stock} units available.`, "error");
         return;
       }
 
@@ -127,7 +136,12 @@ export const CartProvider = ({ children }) => {
 
       console.log("Đã đồng bộ Add to Cart lên Backend");
     } catch (error) {
-      alert("Lỗi khi thêm vào giỏ: " + getErrorMessage(error, "Unknown error"));
+      showNotification(
+        "System Message",
+        "Failed to add item to cart. Please try again.",
+        "error"
+      );
+      console.error("Lỗi khi thêm vào giỏ: " + getErrorMessage(error, "Unknown error"));
     } finally {
       setLoading(false);
     }
