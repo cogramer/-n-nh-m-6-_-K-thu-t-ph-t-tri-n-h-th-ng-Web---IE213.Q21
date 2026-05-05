@@ -4,7 +4,6 @@ const INSECURE_PLACEHOLDER_VALUES = new Set([
   "your_secret_key",
   "replace_with_a_long_random_access_token_secret",
   "replace_with_a_long_random_refresh_token_secret",
-  "replace_with_a_long_random_session_secret",
 ]);
 
 export const getRequiredSecret = (name) => {

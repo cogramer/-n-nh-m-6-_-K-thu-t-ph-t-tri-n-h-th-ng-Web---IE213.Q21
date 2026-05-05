@@ -25,8 +25,7 @@ const __dirname = path.dirname(__filename);
 
 const app = express();
 getRequiredSecret("JWT_SECRET");
-getRequiredSecret("JWT_REFRESH_SECRET");
-const sessionSecret = getRequiredSecret("SESSION_SECRET");
+const sessionSecret = getRequiredSecret("JWT_REFRESH_SECRET");
 
 // Connect to the database
 connectDB();
