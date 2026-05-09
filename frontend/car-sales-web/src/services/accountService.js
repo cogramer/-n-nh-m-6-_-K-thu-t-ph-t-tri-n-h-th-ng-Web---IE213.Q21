@@ -1,4 +1,4 @@
-import api from "./api"; // Instance axios đã có interceptor gắn token
+import api from "./api"; // Axios instance with token interceptor
 
 const AccountService = {
   /**
@@ -65,7 +65,7 @@ const AccountService = {
     }
   },
 
-  /* ================= WISHLIST (DANH SÁCH YÊU THÍCH) ================= */
+  /* Wishlist section */
 
   /**
    * Lấy danh sách wishlist của user

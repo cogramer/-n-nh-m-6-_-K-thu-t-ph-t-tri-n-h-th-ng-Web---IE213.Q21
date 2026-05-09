@@ -24,12 +24,12 @@ function SlideShow() {
       setIndex((prevIndex) => (prevIndex + 1) % slides.length);
     }, 3000);
 
-    return () => clearInterval(timer); // Dọn dẹp bộ nhớ khi component unmount
+    return () => clearInterval(timer); // Clean up memory when the component unmounts
   }, [slides.length]);
 
   return (
     <section className="hero-container">
-      {/* Khối Slideshow Ảnh nền */}
+      {/* Background slideshow block */}
       <div className="slideshow">
         {slides.map((slide, i) => (
           <picture key={i}>
@@ -50,7 +50,7 @@ function SlideShow() {
         ))}
       </div>
 
-      {/* Khối Nội dung (Nằm đè lên Slideshow) */}
+      {/* Content block */}
       <div className="hero-overlay">
         <div className="hero-content">
           <h1>UNLEASH THE PERFORMANCE WITHIN</h1>

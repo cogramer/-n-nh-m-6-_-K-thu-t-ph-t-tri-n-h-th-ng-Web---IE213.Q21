@@ -1,5 +1,5 @@
 import express from "express";
-import passport from "../config/passport.js"; // bạn đặt đường dẫn đúng theo project
+import passport from "../config/passport.js"; // Use the project-relative passport config path
 import authenticateToken from "../middlewares/authMiddleware.js";
 import {
   register,
@@ -27,9 +27,9 @@ router.get(
     if (!req.user) return res.status(401).json({ message: "Google authentication failed" });
 
     const token = generateAccessToken(req.user);
-    // nếu cần refreshToken thì bạn import generateRefreshToken thêm
+    // Import generateRefreshToken here if refresh tokens are needed
 
-    // Sau khi xác thực thành công, chuyển hướng về frontend với token và thông tin người dùng (URL fe)
+    // After successful authentication, redirect to the frontend with token and user info
     res.redirect(
       `https://blockchain-vehicle-marketplace.netlify.app/login?token=${token}&username=${req.user.username}&email=${req.user.email}`
     );

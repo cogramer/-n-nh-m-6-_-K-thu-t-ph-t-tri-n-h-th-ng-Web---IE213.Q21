@@ -1,46 +1,45 @@
-import api from './api'; // Import instance axios bạn đã tạo
+import api from "./api";
 
 const ProductService = {
-  // 1. Lấy tất cả sản phẩm
+  // Fetch every product for catalogue and admin views.
   getAllProducts: async () => {
-    const response = await api.get('/products/getAll');
+    const response = await api.get("/products/getAll");
     return response.data;
   },
 
-  // 2. Lọc sản phẩm (theo query params như /filter?brand=Audi&price=1000)
+  // Pass filter criteria as query parameters, for example /filter?brand=Audi.
   filterProducts: async (params) => {
-    const response = await api.get('/products/filter', { params });
+    const response = await api.get("/products/filter", { params });
     return response.data;
   },
 
-  // 3. Lấy chi tiết 1 sản phẩm theo ID
+  // Load a single product used by the detail page and edit form.
   getProductById: async (id) => {
     const response = await api.get(`/products/${id}`);
     return response.data;
   },
 
-  // 4. Tạo sản phẩm mới (Dùng FormData vì có upload ảnh)
+  // Product creation uses FormData because image files are uploaded with the payload.
   createProduct: async (productData) => {
-    // productData nên là một instance của FormData
-    const response = await api.post('/products/create', productData, {
+    const response = await api.post("/products/create", productData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
     return response.data;
   },
 
-  // 5. Cập nhật sản phẩm (Dùng FormData)
+  // Product updates reuse FormData so admins can replace hero and gallery images.
   updateProduct: async (id, productData) => {
     const response = await api.put(`/products/edit/${id}`, productData, {
       headers: {
-        'Content-Type': 'multipart/form-data',
+        "Content-Type": "multipart/form-data",
       },
     });
     return response.data;
   },
 
-  // 6. Xóa sản phẩm
+  // Delete a product by id from the admin product management page.
   deleteProduct: async (id) => {
     const response = await api.delete(`/products/deleteOne/${id}`);
     return response.data;

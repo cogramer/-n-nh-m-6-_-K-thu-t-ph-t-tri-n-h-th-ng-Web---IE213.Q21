@@ -4,13 +4,13 @@ import authenticateToken, {requireAdmin} from "../middlewares/authMiddleware.js"
 
 const router = express.Router();
 
-//Chỉ admin mới có quyền xem tất cả liên hệ
+// Only admins can view all contacts
 router.get("/getAll", authenticateToken, requireAdmin, contactCtrl.getAllContacts);
 
-//Người dùng đã đăng nhập có thể tạo liên hệ mới
+// Create a new contact
 router.post("/create", authenticateToken, contactCtrl.createContact);
 
-//Chỉ admin mới có quyền đánh dấu đã đọc và xem chi tiết liên hệ
+// Only admins can mark contacts as read and view details
 router.put("/read/:id", authenticateToken, requireAdmin, contactCtrl.readContact);
 router.get("/:id", authenticateToken, requireAdmin, contactCtrl.getContactById);
 

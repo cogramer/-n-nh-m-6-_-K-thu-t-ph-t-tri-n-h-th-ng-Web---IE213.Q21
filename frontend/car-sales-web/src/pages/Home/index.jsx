@@ -1,9 +1,10 @@
-import { useState, useEffect, useCallback } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import SlideShow from "./SlideShow/SlideShow";
 import Filter from "./Filter/Filter";
 import CarList from "../../components/CarList/CarList";
 import Navbar from "../../components/Navbar/Navbar";
 import Footer from "../../components/Footer/Footer";
+import Notification from "../../components/Notification/Notification";
 import ProductService from "../../services/ProductService";
 import AccountService from "../../services/accountService";
 
@@ -38,11 +39,17 @@ const getProductIdFromWishlistItem = (item) => {
 };
 
 function Home() {
+  const notifyRef = useRef();
+
   const [type, setType] = useState("All");
   const [cars, setCars] = useState([]);
   const [wishlistIds, setWishlistIds] = useState([]);
   const [loading, setLoading] = useState(false);
   const [showLoading, setShowLoading] = useState(false);
+
+  const showNotification = (title, message, type = "info") => {
+    notifyRef.current?.showNotification(title, message, type);
+  };
 
   const buildFilterParams = (selectedType) => {
     if (selectedType === "EV") {
@@ -87,9 +94,7 @@ function Home() {
 
       setWishlistIds(ids);
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("Lỗi khi lấy wishlist:", error);
-      }
+      console.error("Failed to fetch wishlist:", error);
       setWishlistIds([]);
     }
   }, []);
@@ -110,10 +115,14 @@ function Home() {
 
         setCars(getCarsFromResponse(response));
       } catch (error) {
-        if (import.meta.env.DEV) {
-          console.error("Lỗi khi lấy danh sách xe:", error);
-        }
+        console.error("Failed to fetch car list:", error);
         setCars([]);
+
+        showNotification(
+          "System Message",
+          "Unable to load the car list. Please try again.",
+          "error"
+        );
       } finally {
         setLoading(false);
       }
@@ -140,10 +149,12 @@ function Home() {
 
     window.addEventListener("auth-change", handleAuthChange);
     window.addEventListener("auth-expired", handleAuthChange);
+    window.addEventListener("wishlist-change", handleAuthChange);
 
     return () => {
       window.removeEventListener("auth-change", handleAuthChange);
       window.removeEventListener("auth-expired", handleAuthChange);
+      window.removeEventListener("wishlist-change", handleAuthChange);
     };
   }, [fetchWishlist]);
 
@@ -151,7 +162,12 @@ function Home() {
     const token = getAuthToken();
 
     if (!token) {
-      alert("Vui lòng đăng nhập để thêm vào wishlist");
+      showNotification(
+        "System Message",
+        "Please log in to add cars to your wishlist.",
+        "warning"
+      );
+
       setWishlistIds([]);
       return;
     }
@@ -166,18 +182,44 @@ function Home() {
     try {
       if (isWishlisted) {
         await AccountService.removeFromWishlist(productId);
+
+        showNotification(
+          "System Message",
+          "Removed from your wishlist.",
+          "success"
+        );
       } else {
         await AccountService.addToWishlist(productId);
+
+        showNotification(
+          "System Message",
+          "Added to your wishlist.",
+          "success"
+        );
       }
+
+      window.dispatchEvent(new Event("wishlist-change"));
     } catch (error) {
-      if (import.meta.env.DEV) {
-        console.error("Lỗi khi cập nhật wishlist:", error);
-      }
+      console.error("Failed to update wishlist:", error);
 
       setWishlistIds((prev) =>
         isWishlisted ? [...prev, id] : prev.filter((item) => item !== id)
       );
+
+      showNotification(
+        "System Message",
+        "Unable to update your wishlist. Please try again.",
+        "error"
+      );
     }
+  };
+
+  const handleAddToCartSuccess = (car) => {
+    showNotification(
+      "System Message",
+      `${car?.name || "Car"} has been added to your cart.`,
+      "success"
+    );
   };
 
   useEffect(() => {
@@ -194,45 +236,46 @@ function Home() {
 
   return (
     <>
-      <Navbar />
-      <main>
-        <SlideShow />
-        <Filter type={type} setType={setType} />
+      <Notification ref={notifyRef} />
 
-        <div style={{ minHeight: "520px", position: "relative" }}>
+      <Navbar />
+      <SlideShow />
+      <Filter type={type} setType={setType} />
+
+      <div style={{ minHeight: "520px", position: "relative" }}>
+        <div
+          style={{
+            opacity: loading ? 0.45 : 1,
+            transition: "opacity 0.2s ease",
+            pointerEvents: loading ? "none" : "auto",
+          }}
+        >
+          <CarList
+            key={type}
+            cars={cars}
+            wishlistIds={wishlistIds}
+            onToggleWishlist={handleToggleWishlist}
+            onAddToCartSuccess={handleAddToCartSuccess}
+          />
+        </div>
+
+        {showLoading && (
           <div
             style={{
-              opacity: loading ? 0.45 : 1,
-              transition: "opacity 0.2s ease",
-              pointerEvents: loading ? "none" : "auto",
+              position: "absolute",
+              inset: 0,
+              display: "flex",
+              justifyContent: "center",
+              alignItems: "flex-start",
+              paddingTop: "24px",
+              background: "rgba(255, 255, 255, 0.4)",
+              zIndex: 2,
             }}
           >
-            <CarList
-              key={type}
-              cars={cars}
-              wishlistIds={wishlistIds}
-              onToggleWishlist={handleToggleWishlist}
-            />
+            <h3>Loading car list...</h3>
           </div>
-
-          {showLoading && (
-            <div
-              style={{
-                position: "absolute",
-                inset: 0,
-                display: "flex",
-                justifyContent: "center",
-                alignItems: "flex-start",
-                paddingTop: "24px",
-                background: "rgba(255, 255, 255, 0.4)",
-                zIndex: 2,
-              }}
-            >
-              <h3>Đang tải danh sách xe...</h3>
-            </div>
-          )}
-        </div>
-      </main>
+        )}
+      </div>
 
       <Footer />
     </>

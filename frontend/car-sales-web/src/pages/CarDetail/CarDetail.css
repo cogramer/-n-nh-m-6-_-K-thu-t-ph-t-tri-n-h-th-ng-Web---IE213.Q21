@@ -169,7 +169,7 @@
   color: #111;
 }
 
-/* Gallery title chỉnh to bằng Technical detail */
+/* Match the gallery title size with Technical detail */
 .car-detail-gallery-title {
   font-size: 34px;
   line-height: 1.2;
@@ -455,20 +455,23 @@
   line-height: 1;
 }
 
-.car-detail-summary .add-to-cart:disabled {
+.car-detail-summary .add-to-cart:disabled,
+.car-detail-summary .add-to-cart.is-disabled {
   opacity: 0.45;
-  cursor: not-allowed;
+  cursor: pointer;
   transform: none;
   box-shadow: none;
 }
 
-.car-detail-summary .add-to-cart:disabled:hover {
+.car-detail-summary .add-to-cart:disabled:hover,
+.car-detail-summary .add-to-cart.is-disabled:hover {
   background: #cbd5e0;
   transform: none;
   box-shadow: none;
 }
 
-.car-detail-summary .add-to-cart:disabled:hover img {
+.car-detail-summary .add-to-cart:disabled:hover img,
+.car-detail-summary .add-to-cart.is-disabled:hover img {
   transform: none;
 }
 
@@ -585,7 +588,7 @@
   font-weight: 800;
 }
 
-/* Fix textarea bị tràn ra khỏi card */
+/* Prevent textarea overflow from the card */
 .car-detail-review-textarea {
   width: 100%;
   max-width: 100%;
@@ -661,10 +664,43 @@
   color: #111;
 }
 
+.car-detail-review-item-user span {
+  display: block;
+  margin-top: 3px;
+  color: #059669;
+  font-size: 12px;
+  font-weight: 750;
+}
+
 .car-detail-review-item-stars {
   letter-spacing: 1px;
   color: #f5a623;
   font-weight: 900;
+}
+
+.car-detail-review-item-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.car-detail-review-edit-btn {
+  width: 34px;
+  height: 34px;
+  border: 1px solid #dbe4f0;
+  border-radius: 10px;
+  background: #fff;
+  color: #111;
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  transition: 0.2s ease;
+}
+
+.car-detail-review-edit-btn:hover {
+  border-color: #111;
+  background: #f8fafc;
+  transform: translateY(-1px);
 }
 
 .car-detail-review-item-comment {
@@ -672,6 +708,45 @@
   color: #222;
   font-weight: 600;
   line-height: 1.5;
+}
+
+.car-detail-review-edit-form {
+  display: grid;
+  gap: 12px;
+  margin-top: 12px;
+}
+
+.car-detail-review-edit-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+}
+
+.car-detail-review-cancel,
+.car-detail-review-save {
+  min-height: 40px;
+  padding: 0 16px;
+  border-radius: 10px;
+  cursor: pointer;
+  font-weight: 900;
+}
+
+.car-detail-review-cancel {
+  border: 1px solid #dbe4f0;
+  background: #fff;
+  color: #111;
+}
+
+.car-detail-review-save {
+  border: 0;
+  background: #111;
+  color: #fff;
+}
+
+.car-detail-review-cancel:disabled,
+.car-detail-review-save:disabled {
+  cursor: not-allowed;
+  opacity: 0.7;
 }
 
 .car-detail-review-item-muted {
@@ -756,7 +831,7 @@
    RESPONSIVE - CAR DETAIL PAGE
 ===================================== */
 
-/* Laptop nhỏ */
+/* Small laptop breakpoint */
 @media (max-width: 1200px) {
   .car-detail-container {
     padding: 36px 5%;
@@ -817,7 +892,7 @@
   }
 }
 
-/* Tablet dọc */
+/* Portrait tablet breakpoint */
 @media (max-width: 768px) {
   .car-detail-container {
     padding: 28px 18px;
@@ -1004,7 +1079,7 @@
   }
 }
 
-/* Mobile nhỏ */
+/* Small mobile breakpoint */
 @media (max-width: 400px) {
   .car-detail-container {
     padding: 20px 10px;
@@ -1042,7 +1117,7 @@
   }
 }
 
-/* Giữ hero image không bị nền, viền, shadow */
+/* Keep the hero image without background, border, or shadow */
 .car-detail .car-detail-top .car-detail-hero {
   background: transparent !important;
   border: 0 !important;

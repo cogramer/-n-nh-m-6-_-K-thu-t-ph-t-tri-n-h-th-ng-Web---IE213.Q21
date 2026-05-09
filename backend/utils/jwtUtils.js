@@ -1,9 +1,10 @@
 import jwt from "jsonwebtoken";
+import { getRequiredSecret } from "../config/secrets.js";
 
 export const generateAccessToken = (user) => {
   return jwt.sign(
     { id: user._id, username: user.username, isadmin: user.isadmin },
-    process.env.JWT_SECRET || "default_secret_key",
+    getRequiredSecret("JWT_SECRET"),
     { expiresIn: "1h" }
   );
 };
@@ -11,7 +12,7 @@ export const generateAccessToken = (user) => {
 export const generateRefreshToken = (user) => {
   return jwt.sign(
     { id: user._id, username: user.username, isadmin: user.isadmin },
-    process.env.JWT_REFRESH_SECRET || "default_refresh_secret_key",
+    getRequiredSecret("JWT_REFRESH_SECRET"),
     { expiresIn: "7d" }
   );
 };

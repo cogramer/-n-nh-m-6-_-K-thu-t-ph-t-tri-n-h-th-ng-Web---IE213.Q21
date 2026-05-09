@@ -2,24 +2,24 @@ import multer from "multer";
 import path from "path";
 import fs from "fs";
 
-// bỏ dấu, khoảng trắng, ký tự lạ để tên folder/file sạch hơn
+// Remove accents, spaces, and unsafe characters from folder/file names
 const slugify = (text = "") => {
   return text
     .toString()
     .normalize("NFD")
-    .replace(/[\u0300-\u036f]/g, "") // bỏ dấu tiếng Việt
+    .replace(/[\u0300-\u036f]/g, "") // Remove Vietnamese accents
     .toLowerCase()
     .trim()
     .replace(/[^a-z0-9]+/g, "-")
     .replace(/^-+|-+$/g, "");
 };
 
-// lấy đuôi file gốc
+// Get the original file extension
 const getExtension = (filename) => {
   return path.extname(filename).toLowerCase();
 };
 
-// giữ tên gốc nhưng làm sạch
+// Keep the original name after sanitizing it
 const sanitizeFileName = (filename) => {
   const ext = getExtension(filename);
   const baseName = path.basename(filename, ext);
@@ -35,7 +35,7 @@ const sanitizeFileName = (filename) => {
   return `${safeBaseName}${ext}`;
 };
 
-// tránh trùng tên file
+// Avoid duplicate file names
 const generateUniqueFileName = (dir, filename) => {
   let finalName = filename;
   let count = 1;
@@ -53,7 +53,7 @@ const generateUniqueFileName = (dir, filename) => {
 const storage = multer.diskStorage({
   destination: (req, file, cb) => {
     try {
-      // Lưu ý: form-data nên gửi brand, name trước file
+      // Note: form-data should send brand and name before files
       const brand = slugify(req.body.brand || "unknown-brand");
       const productName = slugify(req.body.name || "unknown-car");
 
@@ -73,7 +73,7 @@ const storage = multer.diskStorage({
 
       fs.mkdirSync(uploadPath, { recursive: true });
 
-      // để filename dùng tiếp
+      // Reuse the generated filename below
       req.uploadInfo = req.uploadInfo || {};
       req.uploadInfo[file.fieldname] = {
         brand,
@@ -96,7 +96,7 @@ const storage = multer.diskStorage({
       const cleanedName = sanitizeFileName(file.originalname);
       const uniqueName = generateUniqueFileName(dir, cleanedName);
 
-      cb(null, uniqueName); // giữ tên gần như gốc, chỉ làm sạch + chống trùng
+      cb(null, uniqueName); // Keep the name close to the original, only sanitize and deduplicate
     } catch (error) {
       cb(error);
     }

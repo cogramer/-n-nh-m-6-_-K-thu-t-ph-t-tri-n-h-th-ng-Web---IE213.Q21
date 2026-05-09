@@ -6,7 +6,7 @@ import authenticateToken, { requireAdmin } from "../middlewares/authMiddleware.j
 
 const router = express.Router();
 
-// router.get('/', getAllProducts.getAllProducts);// GET /api/products  cách import này có gợi ý cói nó khác j với dùng * as
+// GET /api/products alternative import example
 router.get('/getAll', productCtrl.getAllProducts);          // GET /api/products 
 router.get('/filter', productCtrl.filterProducts);    // GET/ api/products/filter
 router.get('/:id', productCtrl.getProductById);      // GET /api/products/:id        

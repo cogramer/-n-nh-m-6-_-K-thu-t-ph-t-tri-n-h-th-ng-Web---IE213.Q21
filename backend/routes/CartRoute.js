@@ -12,17 +12,17 @@ import authenticateToken, { requireAdmin } from "../middlewares/authMiddleware.j
 
 const router = express.Router();
 
-// ── User routes ───────────────────────────────────────────────────────────────
+// User routes
 router.get("/", authenticateToken, getCart);
 router.post("/add", authenticateToken, addToCart);
 router.put("/update/:productId", authenticateToken, updateCartItem);
 router.delete("/remove/:productId", authenticateToken, removeCartItem);
 router.delete("/clear", authenticateToken, clearCart);
 
-// Lấy tổng số lượng sản phẩm trong giỏ hàng (dành cho icon cart)
+// Fetch the total cart quantity for the cart icon
 router.get("/total", authenticateToken, getCartTotal);
 
-// ── Admin routes ──────────────────────────────────────────────────────────────
+// Admin routes
 router.get("/admin/all", authenticateToken, requireAdmin, getAllCarts);
 
 export default router;

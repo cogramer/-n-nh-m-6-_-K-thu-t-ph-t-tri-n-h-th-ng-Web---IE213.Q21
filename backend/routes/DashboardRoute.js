@@ -1,6 +1,6 @@
 import express from "express";
 
-// Import các controller xử lý logic dashboard
+// Import controllers that handle dashboard logic
 import {
   getSummary,         
   getRevenue,         
@@ -11,7 +11,7 @@ import {
 } from "../controllers/DashboardCtrl.js";
 import authenticateToken, {requireAdmin} from "../middlewares/authMiddleware.js";
 
-// Khởi tạo router của Express
+// Initialize the Express router
 const router = express.Router();
 
 /* ================= DASHBOARD ROUTES ================= */
@@ -68,5 +68,5 @@ router.get("/recent-orders", authenticateToken, requireAdmin, getRecentOrders);
  */
 router.get("/blockchain", authenticateToken, requireAdmin, getBlockchainStats);
 
-// Export router để dùng trong app.js/server.js
+// Export the router for app.js/server.js
 export default router;

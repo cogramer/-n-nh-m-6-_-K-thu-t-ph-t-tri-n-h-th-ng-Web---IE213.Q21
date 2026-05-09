@@ -14,18 +14,18 @@ import {
 
 const router = express.Router();
 
-// Đổi mật khẩu yêu cầu đăng nhập
+// Changing password requires authentication
 router.post("/changePassword", authenticateToken, changePassword);
 router.get('/getProfile', authenticateToken, getProfile);
 router.put('/editProfile', authenticateToken, editProfile);
 
-// Xóa tài khoản chính mình (PHẢI đặt trước /:id)
+// Delete the current account; keep this route before /:id
 router.delete("/me", authenticateToken, (req, res) => {
   req.params.id = "me";
   return deleteUser(req, res);
 });
 
-// Xóa user theo id (admin hoặc tự xóa chính mình)
+// Delete a user by id as admin or the current user
 router.delete("/:id", authenticateToken, deleteUser);
 
 router.post("/logout", logout);

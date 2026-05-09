@@ -1,12 +1,11 @@
-import api from "./api"; // Instance axios dùng chung
+import api from "./api"; // Shared axios instance
 
 const ReviewService = {
   /**
-   * [USER] Tạo đánh giá mới cho sản phẩm
+   * [USER] Tạo hoặc cập nhật đánh giá cho sản phẩm đã mua
    * API: POST /api/reviews/create
-   * @param {Object} reviewData - { productId, rating, comment }
-   * Lưu ý: userId sẽ được BE lấy từ token, nhưng nếu BE yêu cầu truyền 
-   * trong body thì bạn thêm vào object này.
+   * @param {Object} reviewData - { productId, orderId?, rating, comment }
+   * userId được backend lấy từ token.
    */
   createReview: async (reviewData) => {
     const response = await api.post("/reviews/create", reviewData);
@@ -20,6 +19,15 @@ const ReviewService = {
    */
   getReviewsByProductId: async (productId) => {
     const response = await api.get(`/reviews/product/${productId}`);
+    return response;
+  },
+
+  /**
+   * [USER] Lấy review hiện tại của user cho một sản phẩm
+   * API: GET /api/reviews/my/:productId
+   */
+  getMyReviewByProductId: async (productId) => {
+    const response = await api.get(`/reviews/my/${productId}`);
     return response;
   },
 };

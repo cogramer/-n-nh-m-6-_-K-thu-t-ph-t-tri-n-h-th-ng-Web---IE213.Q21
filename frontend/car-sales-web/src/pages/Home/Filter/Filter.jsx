@@ -2,7 +2,7 @@ import React from 'react';
 import './Filter.css';
 
 function Filter({ type, setType }) {
-  // Danh sách các danh mục xe
+  // List of car categories
   const categories = [
     { label: "All", value: "All" },
     { label: "EVs", value: "EV" },

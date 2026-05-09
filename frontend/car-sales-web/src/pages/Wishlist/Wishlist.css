@@ -242,20 +242,23 @@
   filter: brightness(0.9);
 }
 
-.wishlist-actions .add-to-cart:disabled {
+.wishlist-actions .add-to-cart:disabled,
+.wishlist-actions .add-to-cart.is-disabled {
   opacity: 0.45;
-  cursor: not-allowed;
+  cursor: pointer;
   transform: none;
   box-shadow: none;
 }
 
-.wishlist-actions .add-to-cart:disabled:hover {
+.wishlist-actions .add-to-cart:disabled:hover,
+.wishlist-actions .add-to-cart.is-disabled:hover {
   background: #cbd5e0;
   transform: none;
   box-shadow: none;
 }
 
-.wishlist-actions .add-to-cart:disabled:hover img {
+.wishlist-actions .add-to-cart:disabled:hover img,
+.wishlist-actions .add-to-cart.is-disabled:hover img {
   transform: none;
 }
 

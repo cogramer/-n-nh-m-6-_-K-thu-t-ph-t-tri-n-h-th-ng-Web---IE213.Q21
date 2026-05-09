@@ -1,19 +1,24 @@
 import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
-import ProductService from "../../../services/ProductService"; // Import Service của bạn
+import ProductService from "../../../services/ProductService"; // Import the product service
 import "./ProductEdit.css";
-function ProductEdit() {
+function ProductEdit({ notifyRef }) {
   const { id } = useParams();
   const navigate = useNavigate();
-  const [car, setCar] = useState(null); // State lưu dữ liệu từ API
+  const [car, setCar] = useState(null); // State for product data loaded from the API
   const [loading, setLoading] = useState(true);
   const [activeHeroImage, setActiveHeroImage] = useState("");
-  // State quản lý việc Upload ảnh mới (nếu có)
+  // State for new image upload previews
   const [newFiles, setNewFiles] = useState({});
   const [displayGallery, setDisplayGallery] = useState([]);
-  // State lưu các file thực tế để gửi lên server
+  // State for actual files sent to the server
   const [newGalleryFiles, setNewGalleryFiles] = useState([]);
-  // 1. Gọi API lấy dữ liệu sản phẩm
+
+  const showNotification = (message, type = "info") => {
+    notifyRef?.current?.showNotification("System Message", message, type);
+  };
+
+  // Load product data from the API
   useEffect(() => {
     const fetchProduct = async () => {
       try {
@@ -21,7 +26,7 @@ function ProductEdit() {
         const data = await ProductService.getProductById(id);
         setCar(data);
 
-        // KHỞI TẠO GALLERY NGAY TẠI ĐÂY
+        // Initialize the gallery here
         if (data?.galleryImages) {
           setDisplayGallery(data.galleryImages);
         }
@@ -35,7 +40,7 @@ function ProductEdit() {
     };
     if (id) fetchProduct();
   }, [id]);
-  // Handler cập nhật dữ liệu vào state car địa phương
+  // Update local car state from form fields
   const handleUpdateLocal = (field, value) => {
     setCar(prev => ({ ...prev, [field]: value }));
   };
@@ -43,21 +48,21 @@ function ProductEdit() {
     try {
       const formData = new FormData();
 
-      // 1. Thông tin cơ bản
+      // Basic information
       formData.append("name", car.name);
       formData.append("price", car.price);
       formData.append("brand", car.brand || "unknown");
       formData.append("category", car.category || "unknown");
-      // 2. GỬI SPECS (Quan trọng nhất)
-      // Giả sử 'car.specifications' là object chứa các thông số bạn vừa edit
+      // Send specifications
+      // car.specifications contains the edited specification values
       formData.append("specifications", JSON.stringify(car.specifications || {}));
 
-      // Nếu bạn có safetyList và convenienceList cũng muốn lưu:
+      // Persist safety and convenience lists when present
       formData.append("safety", JSON.stringify(car.safety || []));
       formData.append("convenience", JSON.stringify(car.convenience || []));
-      // THÊM DÒNG NÀY ĐỂ LƯU TỒN KHO:
+      // Persist stock quantity
       formData.append("stock", car.stock || 0);
-      // 3. Xử lý ảnh (giữ nguyên code cũ của bạn)
+      // Handle image uploads
       const existingImages = displayGallery.filter(src => !src.startsWith('blob'));
       formData.append("existingGallery", JSON.stringify(existingImages));
       newGalleryFiles.forEach((file) => {
@@ -65,63 +70,70 @@ function ProductEdit() {
       });
 
       await ProductService.updateProduct(id, formData);
-      alert("Cập nhật thông số và ảnh thành công!");
+      showNotification("Product specifications and images updated successfully.", "success");
     } catch (err) {
       console.error("Lỗi khi lưu:", err);
-      alert("Có lỗi xảy ra, vui lòng kiểm tra console.");
+      showNotification("Something went wrong. Please check the console.", "error");
     }
   };
-  // Xử lý tăng giảm số lượng tồn kho
+  // Handle stock quantity changes
   const handleStockChange = (changeAmount) => {
-    setCar(prev => {
-      const currentStock = prev.stock || 0;
-      const newStock = currentStock + changeAmount;
+    const currentStock = Number(car?.stock || 0);
+    const newStock = currentStock + changeAmount;
 
-      // Không cho phép số lượng tồn kho bị âm
-      if (newStock < 0) {
-        alert("Số lượng tồn kho không thể nhỏ hơn 0!");
-        return prev;
-      }
+    // Prevent negative stock values
+    if (newStock < 0) {
+      showNotification("Stock quantity cannot be below zero.", "error");
+      return;
+    }
 
-      return { ...prev, stock: newStock };
-    });
+    setCar(prev => ({ ...prev, stock: newStock }));
   };
   const handleDelete = async () => {
     if (window.confirm("Bạn có chắc muốn xóa xe này?")) {
-      await ProductService.deleteProduct(id);
-      navigate("/admin/products");
+      try {
+        await ProductService.deleteProduct(id);
+        showNotification("Vehicle deleted successfully.", "success");
+        navigate("/admin/products");
+      } catch (error) {
+        console.error("Lỗi khi xóa xe:", error);
+        showNotification(
+          error?.response?.data?.message || "Unable to delete this vehicle.",
+          "error"
+        );
+      }
     }
   };
   const handleRemoveImage = (indexToRemove) => {
     const updatedGallery = displayGallery.filter((_, index) => index !== indexToRemove);
     setDisplayGallery(updatedGallery);
 
-    // Cập nhật vào state car để chuẩn bị lưu
+    // Update car state before saving
     setCar(prev => ({ ...prev, galleryImages: updatedGallery }));
   };
 
-  // Thêm ảnh mới vào gallery
+  // Add new images to the gallery
   const handleAddImages = (e) => {
     const files = Array.from(e.target.files);
     const newPreviews = files.map(file => URL.createObjectURL(file));
 
-    // // Hiển thị thêm ảnh mới lên giao diện
+    // Show new images in the UI
     // setDisplayGallery(prev => [...prev, ...newPreviews]);
-    // // Lưu file thực tế để gửi API
+    // Store the actual files for the API request
     // setNewGalleryFiles(prev => [...prev, ...files]);
     setDisplayGallery(prev => [...prev, ...newPreviews]);
     setNewGalleryFiles(prev => [...prev, ...files]);
   };
   const updateList = (listName, index, newValue) => {
-    // Cập nhật trực tiếp vào state 'car'
+    // Update the car state directly
     setCar(prev => {
-      // listName sẽ là 'safety' hoặc 'convenience'
+      // listName is either safety or convenience
       const newList = [...(prev[listName] || [])];
       newList[index] = newValue;
       return { ...prev, [listName]: newList };
     });
   };
-  // Ánh xạ specifications từ API (dimensions, engine, power...)
+  // Map specifications returned by the API
   const specsEntries = car?.specifications
     ? Object.entries(car.specifications).filter(([key]) => key !== "_id")
     : [];
@@ -129,7 +141,7 @@ function ProductEdit() {
   const safetyList = Array.isArray(car?.safety) ? car.safety : [];
   const convenienceList = Array.isArray(car?.convenience) ? car.convenience : [];
 
-  // Màn hình Loading
+  // Loading screen
   if (loading) {
     return (
       <>
@@ -138,7 +150,7 @@ function ProductEdit() {
     );
   }
 
-  // Màn hình lỗi/không tìm thấy
+  // Error/not-found screen
   if (!car) {
     return (
       <>
@@ -152,7 +164,7 @@ function ProductEdit() {
     );
   }
 
-  // Logic giá tiền (Giữ nguyên logic của bạn)
+  // Price formatting logic
   const usdPerEth = Number(import.meta.env.VITE_USD_PER_ETH || 2000000);
   const usdPriceText = typeof car.price === "number"
     ? new Intl.NumberFormat("en-US", {
@@ -174,7 +186,7 @@ function ProductEdit() {
   return (
     <>
       <main className="car-detail">
-        {/* NÚT ĐIỀU KHIỂN CHÍNH */}
+        {/* Main action buttons */}
         <div className="admin-controls">
           <button className="btn-save" onClick={handleSaveChanges}>Lưu thay đổi</button>
           <button className="btn-delete" onClick={handleDelete}>Xóa xe này</button>
@@ -191,7 +203,7 @@ function ProductEdit() {
                   onChange={(e) => {
                     const file = e.target.files[0];
                     setNewFiles({ ...newFiles, hero: file });
-                    setActiveHeroImage(URL.createObjectURL(file)); // Preview ảnh ngay lập tức
+                    setActiveHeroImage(URL.createObjectURL(file)); // Preview the image immediately
                   }}
                 />
               </label>
@@ -224,7 +236,7 @@ function ProductEdit() {
                   onSave={handleUpdateLocal}
                 />
               </div>
-              {/* BẮT ĐẦU: UI QUẢN LÝ TỒN KHO */}
+              {/* Start: stock management UI */}
               <div style={{ display: 'flex', alignItems: 'center', gap: '15px', marginTop: '15px', padding: '10px', background: '#f8f9fa', borderRadius: '8px', width: 'fit-content' }}>
                 <span style={{ fontWeight: '600', color: '#555' }}>Tồn kho:</span>
                 <button
@@ -243,7 +255,7 @@ function ProductEdit() {
                   +
                 </button>
               </div>
-              {/* KẾT THÚC: UI QUẢN LÝ TỒN KHO */}
+              {/* End: stock management UI */}
               {usdPriceText ? <div className="car-detail-price">
                 $<EditableText
                   value={car.price}
@@ -270,7 +282,7 @@ function ProductEdit() {
                       alt="Gallery"
                       onMouseEnter={() => setActiveHeroImage(src)}
                     />
-                    {/* Nút xóa ảnh */}
+                    {/* Delete image button */}
                     <button
                       className="delete-img-btn"
                       onClick={() => handleRemoveImage(index)}
@@ -316,8 +328,8 @@ function ProductEdit() {
                             onSave={(field, newValue) => {
                               setCar(prev => ({
                                 ...prev,
-                                specifications: {          // SỬA CHỮ 'specs' THÀNH 'specifications'
-                                  ...prev.specifications,  // SỬA Ở ĐÂY NỮA
+                                specifications: {          // Use specifications instead of specs
+                                  ...prev.specifications,  // Keep this branch aligned with specifications
                                   [field]: newValue
                                 }
                               }));
@@ -351,7 +363,7 @@ function ProductEdit() {
                       <li key={index}>
                         <EditableText
                           value={item}
-                          // Gọi updateList với listName là 'convenience'
+                          // Call updateList with convenience as listName
                           onSave={(field, val) => updateList('convenience', index, val)}
                         />
                       </li>

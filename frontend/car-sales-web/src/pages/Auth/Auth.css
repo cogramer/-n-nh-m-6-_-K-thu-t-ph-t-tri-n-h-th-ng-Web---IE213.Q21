@@ -55,7 +55,7 @@
   box-sizing: border-box;
 }
 
-/* Bỏ thanh đỏ/đen trên đầu form */
+/* Remove the red/black bar above the form */
 .auth-card::before {
   display: none;
 }

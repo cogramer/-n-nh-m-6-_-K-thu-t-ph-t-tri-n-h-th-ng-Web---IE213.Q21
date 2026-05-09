@@ -1,4 +1,5 @@
 import { useEffect, useMemo, useState } from "react";
+import { Link } from "react-router-dom";
 import {
   Ban,
   CheckCircle2,
@@ -11,11 +12,15 @@ import {
   RefreshCw,
   Search,
   ShieldCheck,
+  Star,
   Wallet,
 } from "lucide-react";
 import Navbar from "../../components/Navbar/Navbar";
 import { orderService } from "../../services/orderService";
+import ReviewService from "../../services/reviewService";
+import { getBlockchainErrorMessage } from "../../utils/blockchainErrors";
 import {
+  assertWalletCanSendTransaction,
   getBuyerMarketplaceContract,
   getFullPaymentWei,
   getPositiveWeiValue,
@@ -72,34 +77,10 @@ const shortText = (value, start = 8, end = 6) => {
   return `${String(value).slice(0, start)}...${String(value).slice(-end)}`;
 };
 
-const getErrorMessage = (error) => {
-  const raw = String(
-    error?.response?.data?.message ||
-    error?.reason ||
-    error?.shortMessage ||
-    error?.message ||
-    ""
-  );
-  const normalized = raw.toLowerCase();
-
-  if (!raw) return "Something went wrong while processing the transaction.";
-  if (error?.code === "ACTION_REJECTED" || normalized.includes("user rejected")) {
-    return "You rejected the transaction in MetaMask.";
-  }
-  if (normalized.includes("insufficient funds")) {
-    return "Your wallet does not have enough ETH for the payment or gas fee.";
-  }
-  if (normalized.includes("not buyer")) {
-    return "The connected MetaMask wallet is not the buyer wallet for this order.";
-  }
-  if (normalized.includes("cannot cancel now")) {
-    return "This order can no longer be cancelled.";
-  }
-  if (normalized.includes("order not confirmed")) {
-    return "The order has not been confirmed by the showroom yet.";
-  }
-  return raw;
-};
+const getErrorMessage = (error) =>
+  getBlockchainErrorMessage(error, {
+    fallback: "Something went wrong while processing the transaction.",
+  });
 
 const isFullPaymentRecorded = (order) =>
   order.paymentType === "full" &&
@@ -114,13 +95,23 @@ const getOrderStatusKey = (order) =>
     ? "payment_paid"
     : order.status;
 
-function MyOrders() {
+const getItemProductId = (item) => item.productId?._id || item.productId;
+
+const getOrderReviewKey = (orderId, productId) => `${orderId}-${productId}`;
+
+function MyOrders({ notifyRef }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionState, setActionState] = useState(null);
   const [expandedOrderId, setExpandedOrderId] = useState("");
   const [searchTerm, setSearchTerm] = useState("");
   const [statusFilter, setStatusFilter] = useState("all");
+  const [reviewDrafts, setReviewDrafts] = useState({});
+  const [reviewSavingKey, setReviewSavingKey] = useState("");
+
+  const showNotification = (message, type = "info") => {
+    notifyRef?.current?.showNotification("System Message", message, type);
+  };
 
   const fetchOrders = async () => {
     try {
@@ -130,7 +121,7 @@ function MyOrders() {
       setOrders(list);
     } catch (error) {
       console.error("Failed to load orders:", error);
-      alert(getErrorMessage(error));
+      showNotification(getErrorMessage(error), "error");
     } finally {
       setLoading(false);
     }
@@ -179,7 +170,7 @@ function MyOrders() {
       await fetchOrders();
     } catch (error) {
       console.error("Failed to process order:", error);
-      alert(getErrorMessage(error));
+      showNotification(getErrorMessage(error), "error");
     } finally {
       setActionState(null);
     }
@@ -188,24 +179,38 @@ function MyOrders() {
   const handlePayDeposit = (order) => {
     runOrderAction(order, "payDeposit", async () => {
       const contract = await getBuyerMarketplaceContract(order);
+      const value = getPositiveWeiValue(order.depositAmountWei);
+      await assertWalletCanSendTransaction({
+        contract,
+        value,
+        estimateGas: () =>
+          contract.payDeposit.estimateGas(order.blockchainOrderId, { value }),
+      });
       const tx = await contract.payDeposit(order.blockchainOrderId, {
-        value: await getPositiveWeiValue(order.depositAmountWei),
+        value,
       });
       await tx.wait();
       await orderService.verifyDeposit(order._id, tx.hash);
-      alert("Deposit paid successfully. Your order is waiting for showroom confirmation.");
+      showNotification("Deposit paid successfully. Your order is waiting for showroom confirmation.", "success");
     });
   };
 
   const handlePayFull = (order) => {
     runOrderAction(order, "payFull", async () => {
       const contract = await getBuyerMarketplaceContract(order);
+      const value = getFullPaymentWei(order);
+      await assertWalletCanSendTransaction({
+        contract,
+        value,
+        estimateGas: () =>
+          contract.payFull.estimateGas(order.blockchainOrderId, { value }),
+      });
       const tx = await contract.payFull(order.blockchainOrderId, {
-        value: await getFullPaymentWei(order),
+        value,
       });
       await tx.wait();
       await orderService.verifyFullPayment(order._id, tx.hash);
-      alert("Payment completed successfully. Your order is waiting for showroom confirmation.");
+      showNotification("Payment completed successfully. Your order is waiting for showroom confirmation.", "success");
     });
   };
 
@@ -213,10 +218,15 @@ function MyOrders() {
     if (!window.confirm("Have you received the car and want to complete this transaction?")) return;
     runOrderAction(order, "complete", async () => {
       const contract = await getBuyerMarketplaceContract(order);
+      await assertWalletCanSendTransaction({
+        contract,
+        estimateGas: () =>
+          contract.completeOrder.estimateGas(order.blockchainOrderId),
+      });
       const tx = await contract.completeOrder(order.blockchainOrderId);
       await tx.wait();
       await orderService.verifyComplete(order._id, tx.hash);
-      alert("The transaction has been completed successfully.");
+      showNotification("The transaction has been completed successfully.", "success");
     });
   };
 
@@ -224,10 +234,15 @@ function MyOrders() {
     if (!window.confirm("Are you sure you want to cancel this order?")) return;
     runOrderAction(order, "cancel", async () => {
       const contract = await getBuyerMarketplaceContract(order);
+      await assertWalletCanSendTransaction({
+        contract,
+        estimateGas: () =>
+          contract.cancelOrder.estimateGas(order.blockchainOrderId),
+      });
       const tx = await contract.cancelOrder(order.blockchainOrderId);
       await tx.wait();
       await orderService.verifyCancel(order._id, tx.hash);
-      alert("Order cancelled successfully.");
+      showNotification("Order cancelled successfully.", "success");
     });
   };
 
@@ -267,6 +282,64 @@ function MyOrders() {
 
   const canCancel = (order) =>
     ["pending_deposit", "pending_payment", "deposit_paid", "payment_paid"].includes(getOrderStatusKey(order));
+
+  const updateReviewDraft = (orderId, productId, field, value) => {
+    const key = getOrderReviewKey(orderId, productId);
+    setReviewDrafts((previous) => ({
+      ...previous,
+      [key]: {
+        rating: 5,
+        comment: "",
+        ...previous[key],
+        [field]: value,
+        saved: false,
+      },
+    }));
+  };
+
+  const handleSubmitReview = async (event, order, item) => {
+    event.preventDefault();
+
+    const productId = getItemProductId(item);
+    if (!productId) {
+      showNotification("This vehicle is no longer available for review.", "error");
+      return;
+    }
+
+    const key = getOrderReviewKey(order._id, productId);
+    const draft = reviewDrafts[key] || { rating: 5, comment: "" };
+    const comment = String(draft.comment || "").trim();
+
+    if (!comment) {
+      showNotification("Please enter your review before saving.", "error");
+      return;
+    }
+
+    try {
+      setReviewSavingKey(key);
+      await ReviewService.createReview({
+        productId,
+        orderId: order._id,
+        rating: Number(draft.rating) || 5,
+        comment,
+      });
+      setReviewDrafts((previous) => ({
+        ...previous,
+        [key]: {
+          ...previous[key],
+          rating: Number(draft.rating) || 5,
+          comment,
+          saved: true,
+        },
+      }));
+      showNotification("Review saved successfully.", "success");
+    } catch (error) {
+      console.error("Failed to save review:", error);
+      showNotification(getErrorMessage(error), "error");
+    } finally {
+      setReviewSavingKey("");
+    }
+  };
 
   return (
     <>
@@ -373,12 +446,25 @@ function MyOrders() {
                       <div>
                         <h3>Products</h3>
                         <ul className="order-items">
-                          {(order.items || []).map((item) => (
-                            <li key={`${item.productId}-${item.name}`}>
-                              <span>{item.name} x {item.quantity}</span>
-                              <strong>{formatCurrency(item.price)}</strong>
-                            </li>
-                          ))}
+                          {(order.items || []).map((item) => {
+                            const productId = getItemProductId(item);
+
+                            return (
+                              <li key={`${productId}-${item.name}`}>
+                                <span>
+                                  {productId ? (
+                                    <Link className="order-item-product-link" to={`/product/${productId}`}>
+                                      {item.name}
+                                    </Link>
+                                  ) : (
+                                    item.name
+                                  )}{" "}
+                                  x {item.quantity}
+                                </span>
+                                <strong>{formatCurrency(item.price)}</strong>
+                              </li>
+                            );
+                          })}
                         </ul>
                       </div>
 
@@ -406,6 +492,65 @@ function MyOrders() {
                           <p>TxHash: Not available</p>
                         )}
                       </div>
+
+                      {orderStatusKey === "completed" && (
+                        <div className="order-review-panel">
+                          <h3>Review your vehicle</h3>
+                          <div className="order-review-list">
+                            {(order.items || []).map((item) => {
+                              const productId = getItemProductId(item);
+                              const reviewKey = getOrderReviewKey(order._id, productId);
+                              const draft = reviewDrafts[reviewKey] || { rating: 5, comment: "" };
+                              const isSavingReview = reviewSavingKey === reviewKey;
+
+                              return (
+                                <form
+                                  className="order-review-item"
+                                  key={`review-${reviewKey}-${item.name}`}
+                                  onSubmit={(event) => handleSubmitReview(event, order, item)}
+                                >
+                                  <div className="order-review-heading">
+                                    <div>
+                                      <strong>{item.name}</strong>
+                                      <span>Verified purchase</span>
+                                    </div>
+                                    <label>
+                                      Rating
+                                      <select
+                                        value={draft.rating}
+                                        onChange={(event) =>
+                                          updateReviewDraft(order._id, productId, "rating", event.target.value)
+                                        }
+                                      >
+                                        {[5, 4, 3, 2, 1].map((value) => (
+                                          <option key={value} value={value}>
+                                            {value}
+                                          </option>
+                                        ))}
+                                      </select>
+                                    </label>
+                                  </div>
+                                  <textarea
+                                    value={draft.comment}
+                                    onChange={(event) =>
+                                      updateReviewDraft(order._id, productId, "comment", event.target.value)
+                                    }
+                                    placeholder="Share your experience with this vehicle..."
+                                    rows={3}
+                                  />
+                                  <div className="order-review-footer">
+                                    {draft.saved && <span>Review saved.</span>}
+                                    <button type="submit" disabled={isSavingReview || !productId}>
+                                      {isSavingReview ? <LoaderCircle className="spin-icon" size={16} /> : <Star size={16} />}
+                                      Save review
+                                    </button>
+                                  </div>
+                                </form>
+                              );
+                            })}
+                          </div>
+                        </div>
+                      )}
                     </div>
                   )}
                 </article>

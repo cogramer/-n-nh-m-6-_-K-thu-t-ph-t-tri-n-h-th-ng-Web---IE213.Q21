@@ -7,6 +7,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import passport from "./config/passport.js";
 import connectDB from "./config/db.js";
+import { getRequiredSecret } from "./config/secrets.js";
 
 // Import Routes
 import ProductRoutes from "./routes/Product.js";
@@ -23,8 +24,10 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 
 const app = express();
+getRequiredSecret("JWT_SECRET");
+const sessionSecret = getRequiredSecret("JWT_REFRESH_SECRET");
 
-// Kết nối Database
+// Connect to the database
 connectDB();
 
 const deployedOrigins = [
@@ -58,7 +61,7 @@ const isAllowedDevOrigin = (origin) => {
   }
 };
 
-// Middleware cơ bản
+// Base middleware
 app.use(
   cors({
     origin: (origin, callback) => {
@@ -94,21 +97,21 @@ app.use(express.json());
 app.use(express.urlencoded({ extended: true }));
 app.use(cookieParser());
 
-// Cấu hình Session
+// Session configuration
 app.use(
   session({
-    secret: process.env.SESSION_SECRET || "your_secret_key",
+    secret: sessionSecret,
     resave: false,
     saveUninitialized: false,
     cookie: { secure: false, maxAge: 24 * 60 * 60 * 1000 },
   })
 );
 
-// Khởi tạo Passport
+// Initialize Passport
 app.use(passport.initialize());
 app.use(passport.session());
 
-// Phục vụ file tĩnh (Xem ảnh)
+// Serve static image files
 app.use("/images", express.static(path.join(__dirname, "public/images")));
 
 app.get("/", (req, res) => {
@@ -143,7 +146,7 @@ app.use("/api/orders", OrderRoutes);
 app.use("/api/dashboard", DashboardRoutes);
 app.use("/api/wallets", WalletRoutes);
 
-// Middleware xử lý lỗi tập trung
+// Centralized error handling middleware
 app.use((err, req, res, next) => {
   res.status(err.status || err.statusCode || 500).json({
     message: err.message || "Lỗi Server nội bộ",

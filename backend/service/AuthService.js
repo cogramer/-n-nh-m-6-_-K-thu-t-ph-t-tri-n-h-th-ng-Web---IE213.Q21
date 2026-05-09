@@ -3,6 +3,7 @@ import Otp from "../models/OTPModel.js";
 import bcrypt from "bcryptjs";
 import jwt from "jsonwebtoken";
 import sendMail, { describeMailerError } from "../utils/mailer.js";
+import { getRequiredSecret } from "../config/secrets.js";
 import {
   generateAccessToken,
   generateRefreshToken,
@@ -180,7 +181,7 @@ REFRESH TOKEN
 export const refreshAccessTokenService = async (refreshToken) => {
   if (!refreshToken) throw new Error("Refresh token is invalid");
 
-  const decoded = verifyToken(refreshToken, process.env.JWT_REFRESH_SECRET);
+  const decoded = verifyToken(refreshToken, getRequiredSecret("JWT_REFRESH_SECRET"));
   if (!decoded) throw new Error("Refresh token is invalid or expired");
 
   const user = await User.findById(decoded.id);
@@ -193,7 +194,7 @@ export const refreshAccessTokenService = async (refreshToken) => {
       username: decoded.username,
       isadmin: decoded.isadmin,
     },
-    process.env.JWT_SECRET,
+    getRequiredSecret("JWT_SECRET"),
     { expiresIn: "1h" }
   );
 

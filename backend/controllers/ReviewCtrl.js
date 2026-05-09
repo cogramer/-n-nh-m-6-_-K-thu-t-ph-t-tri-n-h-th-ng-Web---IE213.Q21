@@ -1,23 +1,24 @@
 import {
     createReviewService,
-    getReviewsByProductIdService
+    getReviewsByProductIdService,
+    getMyReviewByProductIdService
 } from "../service/ReviewService.js";
 
-// Tạo đánh giá mới
+// Create or update a verified purchase review
 export const createReview = async (req, res) => {
     try {
-        const { productId, rating, comment } = req.body;
-        const userId = req.user?.id; // lấy từ token do đã chạy authMiddleware
+        const { productId, rating, comment, orderId } = req.body;
+        const userId = req.user?.id; // Read from the token after authMiddleware runs
         const numericRating = Number(rating);
         
-        const review = await createReviewService({ productId, userId, rating: numericRating, comment });
+        const review = await createReviewService({ productId, userId, rating: numericRating, comment, orderId });
         res.status(201).json(review);
     } catch (error) {
         res.status(400).json({ message: error.message });
     }
 }
 
-// Lấy tất cả đánh giá của một sản phẩm
+// Fetch verified purchase reviews for one product
 export const getReviewsByProductId = async (req, res) => {
     try {
         const { productId } = req.params;
@@ -26,5 +27,16 @@ export const getReviewsByProductId = async (req, res) => {
     }
     catch (error) {
         res.status(500).json({ message: error.message });
+    }
+}
+
+export const getMyReviewByProductId = async (req, res) => {
+    try {
+        const { productId } = req.params;
+        const userId = req.user?.id;
+        const review = await getMyReviewByProductIdService(productId, userId);
+        res.status(200).json(review);
+    } catch (error) {
+        res.status(400).json({ message: error.message });
     }
 }

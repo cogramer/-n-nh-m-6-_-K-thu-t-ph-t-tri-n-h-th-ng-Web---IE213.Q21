@@ -74,7 +74,21 @@
   background: #fff;
   color: #16a34a;
   border: 1px solid #dbe4f0;
+  padding: 0;
+  cursor: pointer;
   box-shadow: 0 8px 18px rgba(15, 23, 42, 0.08);
+  transition: 0.2s ease;
+}
+
+.vehicle-select-indicator:hover {
+  border-color: #22c55e;
+  transform: translateY(-1px);
+}
+
+.vehicle-select-indicator:disabled {
+  cursor: not-allowed;
+  opacity: 0.6;
+  transform: none;
 }
 
 .vehicle-select-indicator span {
@@ -131,23 +145,49 @@
   line-height: 1.25;
 }
 
+.vehicle-actions {
+  flex: 0 0 auto;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.vehicle-detail-btn,
 .vehicle-remove-btn {
   flex: 0 0 34px;
   width: 34px;
   height: 34px;
-  border: 1px solid #fecdd3;
   border-radius: 8px;
-  background: #fff1f2;
-  color: #be123c;
   cursor: pointer;
   display: grid;
   place-items: center;
   transition: 0.2s ease;
+  text-decoration: none;
+}
+
+.vehicle-detail-btn {
+  border: 1px solid #bfdbfe;
+  background: #eff6ff;
+  color: #0d6efd;
+}
+
+.vehicle-remove-btn {
+  border: 1px solid #fecdd3;
+  background: #fff1f2;
+  color: #be123c;
+}
+
+.vehicle-detail-btn:hover,
+.vehicle-remove-btn:hover {
+  transform: translateY(-1px);
+}
+
+.vehicle-detail-btn:hover {
+  background: #dbeafe;
 }
 
 .vehicle-remove-btn:hover {
   background: #ffe4e6;
-  transform: translateY(-1px);
 }
 
 .vehicle-remove-btn:disabled {
@@ -339,10 +379,14 @@
     text-align: left;
   }
 
-  .vehicle-remove-btn {
+  .vehicle-actions {
     position: absolute;
     top: 12px;
     right: 12px;
+  }
+
+  .vehicle-title-row {
+    padding-right: 84px;
   }
 }
 
@@ -352,7 +396,7 @@
   }
 
   .vehicle-title-row {
-    padding-right: 42px;
+    padding-right: 84px;
   }
 
   .vehicle-spec-grid {

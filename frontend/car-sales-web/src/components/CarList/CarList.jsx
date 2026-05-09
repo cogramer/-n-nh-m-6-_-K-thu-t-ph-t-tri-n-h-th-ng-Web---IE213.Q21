@@ -2,23 +2,28 @@ import React, { useState } from "react";
 import CarCard from "./CarCard/CarCard";
 import "./CarList.css";
 
-function CarList({ cars, wishlistIds = [], onToggleWishlist }) {
-  // Quản lý vị trí bắt đầu của 8 xe đang hiển thị
+function CarList({
+  cars,
+  wishlistIds = [],
+  onToggleWishlist,
+  onAddToCartSuccess,
+}) {
+  // Manage the start position of the 8 visible cars
   const [startIndex, setStartIndex] = useState(0);
   const itemsPerPage = 8;
 
-  // Cắt mảng để chỉ lấy 8 xe tùy theo startIndex
+  // Slice the array to show only 8 cars based on startIndex
   const visibleCars = cars.slice(startIndex, startIndex + itemsPerPage);
 
   const handleNext = () => {
-    // Nếu còn xe phía sau thì mới cho chuyển
+    // Move to the next page only if there are more cars
     if (startIndex + itemsPerPage < cars.length) {
       setStartIndex(startIndex + itemsPerPage);
     }
   };
 
   const handlePrev = () => {
-    // Nếu đang ở trang sau thì cho quay về trang trước
+    // Move back only if the current page is not the first page
     if (startIndex - itemsPerPage >= 0) {
       setStartIndex(startIndex - itemsPerPage);
     }
@@ -38,6 +43,7 @@ function CarList({ cars, wishlistIds = [], onToggleWishlist }) {
               delay={index * 0.05}
               isWishlisted={wishlistIds.includes(String(car._id))}
               onToggleWishlist={onToggleWishlist}
+              onAddToCartSuccess={onAddToCartSuccess}
             />
           ))}
         </div>

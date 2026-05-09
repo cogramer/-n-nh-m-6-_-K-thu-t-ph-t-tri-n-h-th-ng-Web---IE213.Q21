@@ -8,6 +8,7 @@ import {
   updateWallet,
   deleteWallet,
 } from "../../../services/walletService";
+import { getBlockchainErrorMessage } from "../../../utils/blockchainErrors";
 import { requestMetaMaskAccounts } from "../../../utils/metamaskWallets";
 
 function WalletManagement() {
@@ -118,15 +119,10 @@ function WalletManagement() {
 
       await loadWallets();
     } catch (error) {
-      if (error.code === 4001) {
-        setErrorMessage("MetaMask connection was rejected.");
-        return;
-      }
-
       setErrorMessage(
-        error.response?.data?.message ||
-          error.message ||
-          "Could not connect MetaMask."
+        getBlockchainErrorMessage(error, {
+          fallback: "Could not connect MetaMask.",
+        })
       );
     } finally {
       setConnectingWallet(false);

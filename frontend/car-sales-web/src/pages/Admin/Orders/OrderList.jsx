@@ -1,52 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { CheckCircle, XCircle, Eye, CheckSquare, LoaderCircle } from 'lucide-react';
+import { CheckCircle, XCircle, Eye, LoaderCircle } from 'lucide-react';
 import { orderService } from '../../../services/orderService';
+import { getBlockchainErrorMessage } from '../../../utils/blockchainErrors';
 import './OrderList.css';
 
-const getVietnameseErrorMessage = (error, fallback) => {
-  const rawMessage = String(
-    error?.response?.data?.message ||
-    error?.reason ||
-    error?.shortMessage ||
-    error?.message ||
-    ""
-  );
-  const normalized = rawMessage.toLowerCase();
-
-  if (!rawMessage) return fallback;
-  if (error?.code === "ACTION_REJECTED" || normalized.includes("user rejected")) {
-    return "Bạn đã từ chối ký giao dịch trên MetaMask.";
-  }
-  if (normalized.includes("insufficient funds")) {
-    return "Ví không đủ ETH để thanh toán phí gas hoặc thực hiện giao dịch.";
-  }
-  if (normalized.includes("not seller")) {
-    return "Ví đang kết nối không phải ví người bán của đơn hàng này.";
-  }
-  if (normalized.includes("not buyer")) {
-    return "Ví đang kết nối không phải ví người mua của đơn hàng này.";
-  }
-  if (normalized.includes("order not paid")) {
-    return "Đơn hàng chưa được thanh toán trên Smart Contract.";
-  }
-  if (normalized.includes("invalid status")) {
-    return "Trạng thái đơn hàng trên Smart Contract chưa phù hợp để thực hiện thao tác này.";
-  }
-  if (normalized.includes("order not found")) {
-    return "Không tìm thấy đơn hàng trên Smart Contract.";
-  }
-  if (normalized.includes("cannot cancel now")) {
-    return "Không thể hủy đơn hàng ở trạng thái hiện tại.";
-  }
-  if (normalized.includes("execution reverted")) {
-    return "Giao dịch bị Smart Contract từ chối. Vui lòng kiểm tra trạng thái đơn hàng và ví đang kết nối.";
-  }
-  if (normalized.includes("network") || normalized.includes("chain")) {
-    return "Mạng blockchain trên MetaMask chưa đúng. Vui lòng chuyển sang mạng Sepolia.";
-  }
-
-  return rawMessage;
-};
+const getErrorMessage = (error, fallback) =>
+  getBlockchainErrorMessage(error, { fallback });
 
 const isFullPaymentRecorded = (order) =>
   order.paymentType === 'full' &&
@@ -61,11 +20,15 @@ const getOrderStatusKey = (order) =>
     ? 'payment_paid'
     : order.status?.toLowerCase();
 
-const OrderList = () => {
+const OrderList = ({ notifyRef }) => {
   const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [processingAction, setProcessingAction] = useState(null);
+
+  const showNotification = (message, type = "info") => {
+    notifyRef?.current?.showNotification("System Message", message, type);
+  };
 
   const getProcessingText = (action) => {
     if (action === 'confirm') return 'Đang xác nhận...';
@@ -73,7 +36,7 @@ const OrderList = () => {
     return 'Đang xử lý...';
   };
 
-  // Hàm đóng/mở
+  // Toggle handler
   const toggleExpand = (orderId) => {
     setExpandedOrderId(expandedOrderId === orderId ? null : orderId);
   };
@@ -86,10 +49,10 @@ const OrderList = () => {
       setOrders(ordersData);
     } catch (error) {
       console.error("Lỗi khi lấy danh sách đơn hàng:", error);
-      // Mock data 3 trường hợp để test giao diện
+      // Mock data for three UI test cases
       setOrders([
         {
-          _id: "69ec955f0d1a50a941398bc1", // Trường hợp 1: Đang xử lý -> Cần XÁC NHẬN
+          _id: "69ec955f0d1a50a941398bc1", // Case 1: processing -> needs confirmation
           pickupInfo: { name: "Nguyen Van A", phone: "0900000000" },
           items: [{ name: "BMW i5", price: 68000, quantity: 1 }],
           totalAmount: 68000,
@@ -102,7 +65,7 @@ const OrderList = () => {
           createdAt: "2026-04-25T10:20:15.923Z",
         },
         {
-          _id: "69ec955f0d1a50a941398bc2", // Trường hợp 2: Đã xác nhận -> Cần HOÀN TẤT
+          _id: "69ec955f0d1a50a941398bc2", // Case 2: confirmed -> needs completion
           pickupInfo: { name: "Le Thi B", phone: "0911111111" },
           items: [{ name: "Mercedes S500", price: 120000, quantity: 1 }],
           totalAmount: 120000,
@@ -115,7 +78,7 @@ const OrderList = () => {
           createdAt: "2026-04-24T10:20:15.923Z",
         },
         {
-          _id: "69ec955f0d1a50a941398bc3", // Trường hợp 3: Đã hoàn tất -> ẨN NÚT
+          _id: "69ec955f0d1a50a941398bc3", // Case 3: completed -> hide actions
           pickupInfo: { name: "Tran Van C", phone: "0922222222" },
           items: [{ name: "Audi Q7", price: 85000, quantity: 1 }],
           totalAmount: 85000,
@@ -137,51 +100,51 @@ const OrderList = () => {
     fetchOrders();
   }, []);
 
-  // 1. Hàm XÁC NHẬN đơn
+  // Confirm order handler
   const handleConfirmOrder = async (order) => {
     if (processingAction) return;
 
     if (!order.blockchainOrderId) {
-      return alert("Đơn hàng này chưa có mã định danh Blockchain!");
+      return showNotification("This order does not have a blockchain ID yet.", "error");
     }
 
     try {
       setProcessingAction({ orderId: order._id, action: 'confirm' });
       const result = await orderService.adminConfirm(order._id);
-      alert("Xác nhận đơn hàng thành công!");
+      showNotification("Order confirmed successfully.", "success");
       if (result?.txHash) {
         console.log("Admin confirm txHash:", result.txHash);
       }
       await fetchOrders();
     } catch (error) {
       console.error("Lỗi khi xác nhận đơn hàng:", error);
-      alert(getVietnameseErrorMessage(error, "Có lỗi xảy ra khi xác nhận đơn hàng."));
+      showNotification(getErrorMessage(error, "Something went wrong while confirming the order."), "error");
     } finally {
       setProcessingAction(null);
     }
   };
 
-  // 3. Hàm HỦY đơn
+  // Cancel order handler
   const handleCancelOrder = async (order) => {
     if (processingAction) return;
 
     if (!window.confirm("Bạn có chắc chắn muốn hủy đơn hàng này?")) return;
 
     if (!order.blockchainOrderId) {
-      return alert("Đơn hàng này chưa có mã định danh Blockchain!");
+      return showNotification("This order does not have a blockchain ID yet.", "error");
     }
 
     try {
       setProcessingAction({ orderId: order._id, action: 'cancel' });
       const result = await orderService.adminCancel(order._id);
-      alert("Hủy đơn hàng thành công!");
+      showNotification("Order cancelled successfully.", "success");
       if (result?.txHash) {
         console.log("Admin cancel txHash:", result.txHash);
       }
       await fetchOrders();
     } catch (error) {
       console.error("Lỗi khi hủy đơn hàng:", error);
-      alert(getVietnameseErrorMessage(error, "Có lỗi xảy ra khi hủy đơn hàng."));
+      showNotification(getErrorMessage(error, "Something went wrong while cancelling the order."), "error");
     } finally {
       setProcessingAction(null);
     }
@@ -252,7 +215,7 @@ const OrderList = () => {
                   ? `${order.items[0].name} ${order.items.length > 1 ? `(+${order.items.length - 1})` : ''}`
                   : 'Không rõ';
 
-                // Điều kiện: Đã trả tiền (>0)
+                // Condition: paid amount is greater than zero
                 const isPaid = order.paidAmount > 0;
                 const isExpanded = expandedOrderId === order._id;
                 const canCancel = ['pending_deposit', 'pending_payment', 'deposit_paid', 'payment_paid'].includes(statusKey);
@@ -282,8 +245,8 @@ const OrderList = () => {
                       <td>{renderStatusBadge(statusKey)}</td>
                       <td className="actions-cell">
 
-                        {/* 2. NÚT XÁC NHẬN (Confirm) */}
-                        {/* Hiện ra khi: Khách ĐÃ TRẢ TIỀN (cọc hoặc full) VÀ đơn hàng CHƯA được xác nhận/hoàn tất/hủy */}
+                        {/* Confirm button */}
+                        {/* Visible when the customer has paid and the order is not confirmed, completed, or cancelled */}
                         {isPaid && (statusKey === 'deposit_paid' || statusKey === 'payment_paid') && (
                           <button
                             className={`btn-action btn-confirm ${isConfirming ? 'is-loading' : ''}`}
@@ -295,8 +258,8 @@ const OrderList = () => {
                           </button>
                         )}
 
-                        {/* 3. NÚT HỦY (Cancel) */}
-                        {/* Smart Contract chỉ cho buyer hoặc seller hủy trước khi seller xác nhận đơn. */}
+                        {/* Cancel button */}
+                        {/* The smart contract only allows buyer or seller cancellation before seller confirmation. */}
                         {canCancel && (
                           <button
                             className={`btn-action btn-cancel ${isCancelling ? 'is-loading' : ''}`}
@@ -323,7 +286,7 @@ const OrderList = () => {
                         </button>
                       </td>
                     </tr>
-                    {/* HÀNG CHI TIẾT ĐỔ XUỐNG */}
+                    {/* Expanded detail row */}
                     {isExpanded && (
                       <tr className="detail-row">
                         <td colSpan="9">
@@ -371,7 +334,7 @@ const OrderList = () => {
                               </div>
                             </div>
 
-                            {/* Có thể thêm ghi chú hoặc log trạng thái tại đây */}
+                            {/* Status notes or logs can be added here */}
                             <div className="detail-footer">
                               <small>* Dữ liệu được xác thực trên Blockchain</small>
                             </div>

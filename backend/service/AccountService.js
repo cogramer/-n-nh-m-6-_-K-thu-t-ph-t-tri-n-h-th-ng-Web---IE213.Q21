@@ -1,7 +1,7 @@
 import bcrypt from "bcryptjs";
 import mongoose from "mongoose";
-import jwt from "jsonwebtoken";
 import User from "../models/AuthModel.js";
+import { getRequiredSecret } from "../config/secrets.js";
 import { verifyToken } from "../utils/jwtUtils.js";
 
 export const changePasswordService = async ({ email, oldPassword, newPassword, resNewPassword }) => {
@@ -38,30 +38,30 @@ export const getProfileService = async (userId) => {
 export const editProfileService = async (token, data) => {
   if (!token) throw new Error("Token is required");
 
-  const decoded = verifyToken(token, process.env.JWT_SECRET);
+  const decoded = verifyToken(token, getRequiredSecret("JWT_SECRET"));
   if (!decoded) throw new Error("Invalid token");
 
-  // Chỉ lấy ra những trường an toàn cho người dùng sửa
+  // Only allow safe fields to be edited by users
   const { username, phoneNumber, address } = data;
   const updateData = { username, phoneNumber, address };
 
   const updatedUser = await User.findByIdAndUpdate(
     decoded.id, 
-    { $set: updateData }, // Sử dụng $set để tường minh
+    { $set: updateData }, // Use $set for explicit updates
     { new: true, runValidators: true }
-  ).select("-password -refreshToken"); // Không nên trả về field nhạy cảm
+  ).select("-password -refreshToken"); // Do not return sensitive fields
 
   return updatedUser;
 };
 
 
 export const updateUserService = async (token, body) => {
-  const decoded = verifyToken(token, process.env.JWT_SECRET || "default_secret_key");
+  const decoded = verifyToken(token, getRequiredSecret("JWT_SECRET"));
   if (!decoded) throw new Error("Invalid token");
 
   const userId = decoded.id;
 
-  // Cân nhắc bỏ "email" nếu không muốn cho đổi email tùy tiện
+  // Consider removing "email" if email changes should be restricted
   const allowedFields = ["username", "phoneNumber", "address"]; 
   const updatedData = {};
 
@@ -69,7 +69,7 @@ export const updateUserService = async (token, body) => {
     if (body[field] !== undefined) updatedData[field] = body[field];
   }
 
-  // Chặn trường hợp không có gì để cập nhật
+  // Block empty update payloads
   if (Object.keys(updatedData).length === 0) {
     throw new Error("No valid fields to update");
   }
@@ -88,7 +88,7 @@ export const updateUserService = async (token, body) => {
 
 export const deleteUserService = async (token, idParam) => {
 
-  const decoded = verifyToken(token, process.env.JWT_SECRET || "default_secret_key");
+  const decoded = verifyToken(token, getRequiredSecret("JWT_SECRET"));
   if (!decoded) throw new Error("Invalid token");
 
   const userIdFromToken = decoded.id;

@@ -1,4 +1,4 @@
-import api from "./api"; // Sử dụng instance axios đã cấu hình interceptor token
+import api from "./api"; // Use the shared axios instance with token interceptors
 
 const DashboardService = {
   /**

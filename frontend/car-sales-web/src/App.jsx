@@ -24,7 +24,17 @@ const AdminContactList = lazy(() =>
   import("./pages/Admin/Contacts/ContactList")
 );
 
-// --- 1. PROTECTED ROUTE (Cho User đã đăng nhập) ---
+// New public pages
+const Services = lazy(() => import("./pages/Services/Services"));
+const Support = lazy(() => import("./pages/Support/Support"));
+const TermsConditions = lazy(() =>
+  import("./pages/TermsConditions/TermsConditions")
+);
+const PrivacyPolicy = lazy(() =>
+  import("./pages/PrivacyPolicy/PrivacyPolicy")
+);
+
+// Protected route for authenticated users
 const PrivateRoute = ({ children }) => {
   const authenticated = isAuthenticated();
 
@@ -43,7 +53,7 @@ const PrivateRoute = ({ children }) => {
 
 const PageFallback = () => <div>Dang tai trang...</div>;
 
-// --- 2. ADMIN ROUTE (Check quyền qua API) ---
+// Admin route with API role validation
 const AdminRoute = ({ children }) => {
   const [isAdmin, setIsAdmin] = useState(null);
 
@@ -126,11 +136,21 @@ function App() {
               path="/reset-password"
               element={<Auth initialMode="reset" />}
             />
+
             <Route path="/" element={<Home />} />
             <Route path="/about" element={<About />} />
             <Route path="/cars" element={<Cars />} />
             <Route path="/product/:id" element={<CarDetail />} />
             <Route path="/contact" element={<Contact />} />
+
+            {/* STATIC PUBLIC PAGES */}
+            <Route path="/services" element={<Services />} />
+            <Route path="/support" element={<Support />} />
+            <Route
+              path="/terms-and-conditions"
+              element={<TermsConditions />}
+            />
+            <Route path="/privacy-policy" element={<PrivacyPolicy />} />
 
             {/* PRIVATE */}
             <Route
@@ -145,7 +165,7 @@ function App() {
               path="/orders"
               element={
                 <PrivateRoute>
-                  <MyOrders />
+                  <MyOrders notifyRef={notifyRef} />
                 </PrivateRoute>
               }
             />
@@ -176,10 +196,10 @@ function App() {
               }
             >
               <Route index element={<AdminDashboard />} />
-              <Route path="orders" element={<OrderList />} />
+              <Route path="orders" element={<OrderList notifyRef={notifyRef} />} />
               <Route path="contacts" element={<AdminContactList />} />
-              <Route path="products" element={<ProductList />} />
-              <Route path="productEdit/:id" element={<ProductEdit />} />
+              <Route path="products" element={<ProductList notifyRef={notifyRef} />} />
+              <Route path="productEdit/:id" element={<ProductEdit notifyRef={notifyRef} />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />

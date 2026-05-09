@@ -522,6 +522,124 @@
   border-bottom: 0;
 }
 
+.order-item-product-link {
+  color: #1d4ed8;
+  font-weight: 750;
+  text-decoration: none;
+}
+
+.order-item-product-link:hover {
+  text-decoration: underline;
+}
+
+.order-review-panel {
+  grid-column: 1 / -1;
+  padding-top: 18px;
+  border-top: 1px solid #edf1f7;
+}
+
+.order-review-list {
+  display: grid;
+  gap: 14px;
+}
+
+.order-review-item {
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border: 1px solid #e1e8f3;
+  border-radius: 8px;
+  background: #fff;
+}
+
+.order-review-heading,
+.order-review-footer {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 14px;
+}
+
+.order-review-heading strong,
+.order-review-footer span {
+  display: block;
+}
+
+.order-review-heading span {
+  display: block;
+  margin-top: 4px;
+  color: #059669;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.order-review-heading label {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: #101827;
+  font-size: 14px;
+  font-weight: 750;
+}
+
+.order-review-heading select {
+  min-height: 38px;
+  padding: 0 10px;
+  border: 1px solid #d8e0ec;
+  border-radius: 8px;
+  background: #fff;
+  color: #101827;
+  font: inherit;
+  font-weight: 750;
+}
+
+.order-review-item textarea {
+  width: 100%;
+  min-height: 92px;
+  resize: vertical;
+  padding: 12px 14px;
+  border: 1px solid #d8e0ec;
+  border-radius: 8px;
+  background: #fff;
+  color: #101827;
+  font: inherit;
+  line-height: 1.55;
+  outline: none;
+}
+
+.order-review-item textarea:focus,
+.order-review-heading select:focus {
+  border-color: #2563eb;
+  box-shadow: 0 0 0 3px rgba(37, 99, 235, .14);
+}
+
+.order-review-footer span {
+  color: #059669;
+  font-size: 13px;
+  font-weight: 750;
+}
+
+.order-review-footer button {
+  min-height: 40px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 14px;
+  border: 0;
+  border-radius: 8px;
+  background: #0f172a;
+  color: #fff;
+  cursor: pointer;
+  font: inherit;
+  font-weight: 750;
+}
+
+.order-review-footer button:disabled {
+  cursor: not-allowed;
+  opacity: .65;
+}
+
 .tx-link {
   display: inline-flex;
   align-items: center;
@@ -641,7 +759,21 @@
   }
 
   .order-card-actions,
-  .order-action {
+  .order-action,
+  .order-review-heading,
+  .order-review-footer,
+  .order-review-footer button {
     width: 100%;
+  }
+
+  .order-review-heading,
+  .order-review-footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .order-review-heading label {
+    width: 100%;
+    justify-content: space-between;
   }
 }

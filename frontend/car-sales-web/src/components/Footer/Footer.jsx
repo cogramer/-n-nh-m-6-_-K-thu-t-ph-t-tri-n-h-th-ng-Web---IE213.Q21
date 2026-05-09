@@ -15,7 +15,6 @@ function Footer() {
   return (
     <footer className="footer">
       <div className="footer-container">
-
         {/* Logo */}
         <div className="footer-avata">
           <img
@@ -27,14 +26,13 @@ function Footer() {
 
         {/* Content */}
         <div className="footer-content">
-
           {/* Information */}
           <div className="footer-column">
             <button
               className="footer-toggle"
               onClick={() => toggleSection("info")}
             >
-              Infomation
+              Information
               <span>{openSection === "info" ? "−" : "+"}</span>
             </button>
 
@@ -43,9 +41,15 @@ function Footer() {
                 openSection === "info" ? "open" : ""
               }`}
             >
-              <li><Link to="/">Home</Link></li>
-              <li><Link to="/about">About</Link></li>
-              <li><Link to="/cars">Cars and reviews</Link></li>
+              <li>
+                <Link to="/">Home</Link>
+              </li>
+              <li>
+                <Link to="/about">About</Link>
+              </li>
+              <li>
+                <Link to="/cars">Cars and reviews</Link>
+              </li>
             </ul>
           </div>
 
@@ -64,10 +68,18 @@ function Footer() {
                 openSection === "help" ? "open" : ""
               }`}
             >
-              <li><a href="/html/services">Services</a></li>
-              <li><a href="/html/contact_us">Supports</a></li>
-              <li><a href="#">Terms & Condition</a></li>
-              <li><a href="#">Privacy Policy</a></li>
+              <li>
+                <Link to="/services">Services</Link>
+              </li>
+              <li>
+                <Link to="/support">Support</Link>
+              </li>
+              <li>
+                <Link to="/terms-and-conditions">Terms & Conditions</Link>
+              </li>
+              <li>
+                <Link to="/privacy-policy">Privacy Policy</Link>
+              </li>
             </ul>
           </div>
 
@@ -87,19 +99,30 @@ function Footer() {
               }`}
             >
               <ul className="footer-contact">
-                <li><span className="icon">💬</span> Chat with sale</li>
-                <li><span className="icon">☎️</span> (84) 000000000</li>
-                <li><span className="icon">✉️</span> email</li>
+                <li>
+                  <span className="icon">💬</span> Chat with sale
+                </li>
+                <li>
+                  <span className="icon">☎️</span> (84) 000000000
+                </li>
+                <li>
+                  <span className="icon">✉️</span> email
+                </li>
               </ul>
 
               <div className="social-icons">
-                <a href="#"><img src={facebookIcon} alt="Facebook" /></a>
-                <a href="#"><img src={xIcon} alt="X" /></a>
-                <a href="#"><img src={instagramIcon} alt="Instagram" /></a>
+                <a href="#" aria-label="Facebook">
+                  <img src={facebookIcon} alt="Facebook" />
+                </a>
+                <a href="#" aria-label="X">
+                  <img src={xIcon} alt="X" />
+                </a>
+                <a href="#" aria-label="Instagram">
+                  <img src={instagramIcon} alt="Instagram" />
+                </a>
               </div>
             </div>
           </div>
-
         </div>
       </div>
 

@@ -10,7 +10,9 @@ import Step2Delivery from "./Step2Delivery/Step2Delivery";
 import Step3Payment from "./Step3Payment/Step3Payment";
 import Step4Confirmation from "./Step4Confirmation/Step4Confirmation";
 import { orderService } from "../../services/orderService";
+import { getBlockchainErrorMessage } from "../../utils/blockchainErrors";
 import {
+  assertWalletCanSendTransaction,
   ensureSelectedWalletReady,
   getMarketplaceContract,
   getPositiveWeiValue,
@@ -43,66 +45,10 @@ const CHECKOUT_STEPS = [
   },
 ];
 
-const getCheckoutErrorMessage = (error) => {
-  const raw = String(
-    error?.response?.data?.message ||
-      error?.reason ||
-      error?.shortMessage ||
-      error?.info?.error?.message ||
-      error?.message ||
-      ""
-  );
-  const normalized = raw.toLowerCase();
-
-  if (!raw) return "Payment could not be completed. Please try again.";
-  if (error?.code === "ACTION_REJECTED" || normalized.includes("user rejected")) {
-    return "You rejected the transaction in MetaMask.";
-  }
-  if (
-    error?.code === "INSUFFICIENT_FUNDS" ||
-    normalized.includes("insufficient funds")
-  ) {
-    return "Your wallet does not have enough Sepolia ETH for this payment and gas fee.";
-  }
-  if (normalized.includes("network") || normalized.includes("chain")) {
-    return "Please switch MetaMask to the Sepolia network and try again.";
-  }
-  if (
-    normalized.includes("execution reverted") ||
-    normalized.includes("missing revert data")
-  ) {
-    if (normalized.includes("not buyer")) {
-      return "The active MetaMask account is not the selected buyer wallet. Please switch MetaMask to the selected wallet and try again.";
-    }
-    if (
-      normalized.includes("incorrect full amount") ||
-      normalized.includes("incorrect deposit amount")
-    ) {
-      return "The payment amount does not match the amount stored in the smart contract. Please refresh checkout and create the order again.";
-    }
-    if (
-      normalized.includes("not full payment order") ||
-      normalized.includes("not deposit order")
-    ) {
-      return "The selected payment plan does not match this blockchain order. Please go back and try checkout again.";
-    }
-    if (normalized.includes("invalid status")) {
-      return "This blockchain order is no longer waiting for payment. Please refresh checkout and try again.";
-    }
-    if (normalized.includes("order not found")) {
-      return "This order was not found on the smart contract. Please refresh checkout and try again.";
-    }
-
-    return "The smart contract rejected this payment. Please check your wallet, amount, and network.";
-  }
-  if (normalized.includes("metamask")) {
-    return "MetaMask could not complete the transaction.";
-  }
-
-  return raw.length > 140
-    ? "Payment could not be completed. Please check MetaMask and try again."
-    : raw;
-};
+const getCheckoutErrorMessage = (error) =>
+  getBlockchainErrorMessage(error, {
+    fallback: "Payment could not be completed. Please check MetaMask and try again.",
+  });
 
 const normalizeOrderData = (response) => response?.data || response;
 
@@ -271,11 +217,18 @@ function Checkout({ notifyRef }) {
       expectedWei: totalAmountWei,
     });
 
+    const value = getPositiveWeiValue(totalAmountWei);
+    showMessage("Checking wallet balance and estimated gas fee...");
+    await assertWalletCanSendTransaction({
+      contract,
+      value,
+      estimateGas: () =>
+        contract.payFull.estimateGas(blockchainOrderId, { value }),
+    });
+
     showMessage("Please confirm the full payment in MetaMask...");
 
-    const tx = await contract.payFull(blockchainOrderId, {
-      value: getPositiveWeiValue(totalAmountWei),
-    });
+    const tx = await contract.payFull(blockchainOrderId, { value });
 
     setFinalTxHash(tx.hash);
     showMessage("Transaction sent. Waiting for blockchain confirmation...");
@@ -307,11 +260,18 @@ function Checkout({ notifyRef }) {
       expectedWei: depositAmountWei,
     });
 
+    const value = getPositiveWeiValue(depositAmountWei);
+    showMessage("Checking wallet balance and estimated gas fee...");
+    await assertWalletCanSendTransaction({
+      contract,
+      value,
+      estimateGas: () =>
+        contract.payDeposit.estimateGas(blockchainOrderId, { value }),
+    });
+
     showMessage("Please confirm the deposit in MetaMask...");
 
-    const tx = await contract.payDeposit(blockchainOrderId, {
-      value: getPositiveWeiValue(depositAmountWei),
-    });
+    const tx = await contract.payDeposit(blockchainOrderId, { value });
 
     setFinalTxHash(tx.hash);
     showMessage("Deposit transaction sent. Waiting for blockchain confirmation...");

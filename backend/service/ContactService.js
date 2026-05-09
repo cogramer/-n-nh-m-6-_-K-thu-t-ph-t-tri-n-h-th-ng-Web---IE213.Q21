@@ -1,12 +1,12 @@
 import Contact from '../models/ContactModel.js';
 import sendMail from '../utils/mailer.js';
 
-// Lấy toàn bộ liên hệ
+// Fetch all contacts
 export const getAllContactsService = async () => {
     return await Contact.find().sort({ createdAt: -1 });
 };
 
-// Lấy 1 liên hệ theo id
+// Fetch one contact by id
 export const getContactByIdService = async (id) => {
     const contact = await Contact.findById(id);
     if(!contact) {
@@ -16,7 +16,7 @@ export const getContactByIdService = async (id) => {
     return await contact;
 }
 
-// Tạo liên hệ mới
+// Create a new contact
 export const createContactService = async (data) => {
     const { name, email, phone, subject, message } = data;
     if (!name || !email || !phone || !subject || !message) {
@@ -26,7 +26,7 @@ export const createContactService = async (data) => {
     const contact = new Contact(data);
     const savedContact = await contact.save();
 
-    // Gửi email xác nhận đên khách hàng sau khi tạo liên hệ thành công
+    // Send a confirmation email after contact creation succeeds
     await sendMail(
         contact.email,
         "Chúng tôi đã nhận được liên hệ của bạn",
@@ -37,7 +37,7 @@ export const createContactService = async (data) => {
     return savedContact;
 };
 
-// Đọc liên hệ
+// Mark contact as read
 export const readContactService = async (id) => {
     const contact = await Contact.findById(id);
     if(!contact) {

@@ -21,7 +21,7 @@
   box-sizing: border-box;
 }
 
-/* logo chỉnh lệch trái nhẹ */
+/* Slightly align the logo to the left */
 .footer-avata {
   flex: 1;
   display: flex;

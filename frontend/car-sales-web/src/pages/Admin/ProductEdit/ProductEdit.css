@@ -1,18 +1,18 @@
-/* Container chứa các nút */
+/* Button container */
 .admin-controls {
   display: flex;
   gap: 15px;
-  /* Khoảng cách giữa các nút */
+  /* Spacing between buttons */
   padding: 40px 8% 0 8%;
-  /* Nền nhẹ để tách biệt khu vực điều khiển */
+  /* Light background to separate the control area */
   border-radius: 8px;
   /* justify-content: flex-end; */
-  /* Đẩy nút về bên phải */
+  /* Push buttons to the right */
   border-top: 1px solid #e0e0e0;
   margin-top: 20px;
 }
 
-/* Base style cho các nút bấm */
+/* Base button style */
 .admin-controls button {
   padding: 10px 24px;
   font-size: 14px;
@@ -21,7 +21,7 @@
   border-radius: 6px;
   cursor: pointer;
   transition: all 0.3s ease;
-  /* Hiệu ứng mượt mà */
+  /* Smooth transition */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -29,10 +29,10 @@
   outline: none;
 }
 
-/* Nút Lưu thay đổi (Primary Action) */
+/* Save button (primary action) */
 .btn-save {
   background-color: #2563eb;
-  /* Màu xanh đậm hiện đại */
+  /* Modern dark blue color */
   color: white;
   box-shadow: 0 2px 4px rgba(37, 99, 235, 0.2);
 }
@@ -40,7 +40,7 @@
 .btn-save:hover {
   background-color: #1d4ed8;
   transform: translateY(-1px);
-  /* Nhích nhẹ lên khi hover */
+  /* Move slightly upward on hover */
   box-shadow: 0 4px 6px rgba(37, 99, 235, 0.3);
 }
 
@@ -48,23 +48,23 @@
   transform: translateY(0);
 }
 
-/* Nút Xóa (Danger Action) */
+/* Delete button (danger action) */
 .btn-delete {
   background-color: #ffffff;
   color: #dc2626;
-  /* Chữ màu đỏ */
+  /* Red text */
   border: 1px solid #dc2626 !important;
-  /* Viền đỏ */
+  /* Red border */
 }
 
 .btn-delete:hover {
   background-color: #fef2f2;
-  /* Nền hồng nhạt khi hover */
+  /* Light red background on hover */
   color: #b91c1c;
   border-color: #b91c1c !important;
 }
 
-/* Hiệu ứng khi đang gửi dữ liệu (nếu bạn thêm class loading sau này) */
+/* Loading-state style for future loading classes */
 .admin-controls button:disabled {
   opacity: 0.6;
   cursor: not-allowed;
@@ -329,20 +329,20 @@
   cursor: pointer;
 }
 
-/* Container bọc ngoài (Label) */
+/* Outer label container */
 .add-gallery-item {
   cursor: pointer;
   display: block;
-  /* Đảm bảo nó chiếm diện tích */
+  /* Ensure it occupies space */
 }
 
-/* Khung placeholder phía trong */
+/* Inner placeholder frame */
 .add-placeholder {
   width: 120px;
-  /* Khớp với kích thước ảnh gallery của bạn */
+  /* Match the gallery image size */
   height: 80px;
   border: 2px dashed #ccc;
-  /* Nét đứt tạo cảm giác "chờ upload" */
+  /* Dashed border communicates pending upload */
   border-radius: 8px;
   display: flex;
   flex-direction: column;
@@ -352,18 +352,18 @@
   transition: all 0.3s ease;
   color: #666;
   gap: 8px;
-  /* Khoảng cách giữa icon và chữ */
+  /* Spacing between icon and text */
 }
 
-/* Hiệu ứng khi di chuột vào hoặc kéo thả file qua */
+/* Hover and drag-over effect */
 .add-gallery-item:hover .add-placeholder {
   border-color: #2563eb;
-  /* Đổi sang màu chủ đạo của bạn */
+  /* Switch to the primary brand color */
   background-color: #f0f7ff;
   color: #2563eb;
 }
 
-/* Style cho chữ "ĐỔI ẢNH" (hoặc nên đổi thành "THÊM ẢNH") */
+/* Style for the image upload label */
 .add-placeholder span {
   font-size: 12px;
   font-weight: 600;
@@ -371,7 +371,7 @@
   letter-spacing: 0.5px;
 }
 
-/* Thêm một dấu cộng bằng CSS (không cần icon library) */
+/* Add a plus sign with CSS instead of an icon library */
 .add-placeholder::before {
   content: "+";
   font-size: 24px;
@@ -379,9 +379,9 @@
   line-height: 1;
 }
 
-/* Container bọc cả ảnh và nút xóa */
+/* Delete button (danger action) */
 
-/* Style cho ảnh */
+/* Image style */
 .gallery-item-wrapper img {
   width: 100%;
   height: 100%;
@@ -391,22 +391,22 @@
   transition: border-color 0.3s;
 }
 
-/* Nút xóa ảnh */
+/* Delete image button */
 .delete-img-btn {
   position: absolute;
   top: -8px;
-  /* Đẩy lên góc trên */
+  /* Move to the top corner */
   right: -8px;
-  /* Đẩy sang góc phải */
+  /* Move to the right corner */
   width: 24px;
   height: 24px;
   background-color: #ff4d4f;
-  /* Màu đỏ cảnh báo */
+  /* Warning red */
   color: white;
   border: 2px solid white;
-  /* Viền trắng để nổi bật trên nền ảnh */
+  /* White border for contrast on the image */
   border-radius: 50%;
-  /* Làm nút tròn */
+  /* Make the button circular */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -420,34 +420,34 @@
   line-height: 1;
 }
 
-/* Hiệu ứng hover cho nút xóa */
+/* Delete button (danger action) */
 .delete-img-btn:hover {
   background-color: #cf1322;
-  /* Đỏ đậm hơn */
+  /* Darker red */
   transform: scale(1.1);
-  /* Phóng to nhẹ */
+  /* Slightly enlarge */
 }
 
-/* Hiệu ứng khi hover vào cả item thì ảnh đổi màu viền */
+/* Change image border color when the item is hovered */
 .gallery-item-wrapper:hover img {
   border-color: #ff4d4f;
 }
 
-/* Container bọc cả ảnh và nút xóa */
+/* Delete button (danger action) */
 .gallery-item-wrapper {
   position: relative;
-  /* Quan trọng để nút con căn theo nó */
+  /* Required so child buttons can align to it */
   border-radius: 8px;
   overflow: visible;
-  /* Cho phép nút xóa chớm ra ngoài một chút nếu muốn */
+  /* Delete button (danger action) */
 }
 
-/* Hiệu ứng khi hover vào cả item thì ảnh đổi màu viền */
+/* Change image border color when the item is hovered */
 .gallery-item-wrapper:hover img {
   border-color: #ff4d4f;
 }
 
-/* Style cho ảnh */
+/* Image style */
 .gallery-item-wrapper img {
   width: 100%;
   height: 100%;
@@ -457,22 +457,22 @@
   transition: border-color 0.3s;
 }
 
-/* Nút xóa ảnh */
+/* Delete image button */
 .delete-img-btn {
   position: absolute;
   top: -8px;
-  /* Đẩy lên góc trên */
+  /* Move to the top corner */
   right: -8px;
-  /* Đẩy sang góc phải */
+  /* Move to the right corner */
   width: 24px;
   height: 24px;
   background-color: #ff4d4f;
-  /* Màu đỏ cảnh báo */
+  /* Warning red */
   color: white;
   border: 2px solid white;
-  /* Viền trắng để nổi bật trên nền ảnh */
+  /* White border for contrast on the image */
   border-radius: 50%;
-  /* Làm nút tròn */
+  /* Make the button circular */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -486,12 +486,12 @@
   line-height: 1;
 }
 
-/* Hiệu ứng hover cho nút xóa */
+/* Delete button (danger action) */
 .delete-img-btn:hover {
   background-color: #cf1322;
-  /* Đỏ đậm hơn */
+  /* Darker red */
   transform: scale(1.1);
-  /* Phóng to nhẹ */
+  /* Slightly enlarge */
 }
 
 
@@ -919,7 +919,7 @@
   border-radius: 5px;
   cursor: pointer;
   aspect-ratio: 1 / 1;
-  /* Cố định tỉ lệ 1:1 */
+  /* Lock a 1:1 aspect ratio */
   display: flex;
   align-items: center;
   justify-content: center;
@@ -934,23 +934,23 @@
 
 .add-to-cart:hover {
   background-color: #3080F8;
-  /* Đổi sang màu xanh thương hiệu khi hover */
+  /* Switch to brand blue on hover */
   transform: translateY(-2px);
-  /* Nhấc nút lên một chút tạo chiều sâu */
+  /* Lift the button slightly for depth */
   box-shadow: 0 4px 12px rgba(48, 128, 248, 0.3);
-  /* Đổ bóng nhẹ cùng tông màu */
+  /* Use a subtle same-color shadow */
 }
 
-/* Hiệu ứng cho icon bên trong khi hover */
+/* Hover effect for the inner icon */
 .add-to-cart:hover img {
   transform: scale(1.15) rotate(-5deg);
-  /* Phóng to và xoay nhẹ icon cho sinh động */
+  /* Slightly enlarge and rotate the icon */
 }
 
-/* Hiệu ứng khi nhấn vào (Active) */
+/* Active press effect */
 .add-to-cart:active {
   transform: translateY(0);
-  /* Nút lún xuống khi bấm */
+  /* Button sinks slightly when pressed */
   filter: brightness(0.9);
-  /* Làm tối màu đi một chút */
+  /* Darken slightly */
 }

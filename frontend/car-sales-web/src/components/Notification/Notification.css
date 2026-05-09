@@ -1,41 +1,41 @@
-/* 1. LỚP BAO NGOÀI CÙNG: Quản lý vị trí và việc xếp chồng */
+/* Outer wrapper: manages position and stacking */
 .notification-container {
   position: fixed;
   top: 60px;
-  /* Giữ vị trí top cũ của bạn */
+  /* Keep the existing top offset */
   right: 25px;
-  /* Giữ vị trí right cũ của bạn */
+  /* Keep the existing right offset */
   z-index: 99999;
   display: flex;
   flex-direction: column;
   gap: 15px;
-  /* Khoảng cách giữa các thông báo khi hiện nhiều cái */
+  /* Spacing between stacked notifications */
   pointer-events: none;
-  /* Không chặn click chuột vào các nút bên dưới nếu trống */
+  /* Allow clicks to pass through empty overlay space */
 }
 
-/* 2. ITEM THÔNG BÁO: Giữ nguyên thiết kế "notification-overlay" cũ của bạn */
+/* Notification item: preserves the existing notification-overlay design */
 .notification-item {
   pointer-events: auto;
-  /* Cho phép tương tác (nếu cần) */
+  /* Allow interaction when needed */
   position: relative;
-  /* Đổi từ fixed sang relative để nó nằm trong dòng chảy của flexbox */
+  /* Use relative positioning so items participate in flex layout */
 
-  /* Giữ nguyên thiết kế gốc của bạn */
+  /* Keep the original visual design */
   background: #ffffff;
   border: 1px solid #e5e5e5;
   border-left: 5px solid #0066bf;
-  /* Màu xanh BMW */
+  /* BMW blue */
   padding: 16px 24px;
   min-width: 320px;
   border-radius: 4px;
   box-shadow: 0 10px 30px rgba(0, 0, 0, 0.08);
 
-  /* Giữ nguyên hiệu ứng trượt vào */
+  /* Keep the slide-in effect */
   animation: slideInNotification 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
 }
 
-/* 3. NỘI DUNG (Giữ nguyên 100%) */
+/* Content block */
 .notification-content {
   display: flex;
   align-items: center;
@@ -64,7 +64,7 @@
   font-weight: 500;
 }
 
-/* 4. THANH PROGRESS (Giữ nguyên logic chạy lùi của bạn) */
+/* Progress bar keeps the countdown behavior */
 .notification-progress {
   position: absolute;
   bottom: 0;
@@ -84,7 +84,7 @@
   animation-duration: inherit;
 }
 
-/* 5. KEYFRAMES (Giữ nguyên) */
+/* Keyframes */
 @keyframes slideInNotification {
   from {
     transform: translateX(120%);
