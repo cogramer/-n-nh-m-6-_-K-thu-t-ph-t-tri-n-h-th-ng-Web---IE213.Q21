@@ -5,7 +5,7 @@
   /* Keep the existing top offset */
   right: 25px;
   /* Keep the existing right offset */
-  z-index: 99999;
+  z-index: 130000;
   display: flex;
   flex-direction: column;
   gap: 15px;

@@ -179,16 +179,6 @@ function Step3Payment({
         </p>
       </div>
 
-      <div className="payment-safety-panel">
-        <strong>Payment safety checks</strong>
-        <ul>
-          <li>MetaMask must be on Sepolia and unlocked.</li>
-          <li>The selected wallet must match the active MetaMask account.</li>
-          <li>The wallet must have enough SepoliaETH for payment and gas.</li>
-          <li>RPC, gas estimation, and smart contract rejection errors are shown as readable messages.</li>
-        </ul>
-      </div>
-
       <div className="payment-plan-grid">
         <label
           className={`payment-plan-card ${

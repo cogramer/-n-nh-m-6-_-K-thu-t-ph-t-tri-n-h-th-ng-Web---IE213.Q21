@@ -1,6 +1,7 @@
-import React, { useCallback, useEffect, useMemo, useState } from "react";
+import React, { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { ArrowLeft, ArrowRight, LoaderCircle } from "lucide-react";
+import lottie from "lottie-web/build/player/lottie_light";
 import { useCart } from "../../context/CartContext";
 import Navbar from "../../components/Navbar/Navbar";
 import "./Checkout.css";
@@ -9,6 +10,7 @@ import OrderSummary from "./OrderSummary/OrderSummary";
 import Step2Delivery from "./Step2Delivery/Step2Delivery";
 import Step3Payment from "./Step3Payment/Step3Payment";
 import Step4Confirmation from "./Step4Confirmation/Step4Confirmation";
+import loadingCarAnimation from "../../assets/Loading_car.json";
 import { orderService } from "../../services/orderService";
 import { getBlockchainErrorMessage } from "../../utils/blockchainErrors";
 import {
@@ -43,6 +45,15 @@ const CHECKOUT_STEPS = [
     title: "Confirmation",
     description: "Track your purchase order.",
   },
+];
+
+const CHECKOUT_PAYMENT_STEPS = [
+  "Preparing checkout details.",
+  "Checking the selected MetaMask wallet.",
+  "Creating the escrow order.",
+  "Confirm the transaction in MetaMask.",
+  "Waiting for blockchain confirmation.",
+  "Verifying the payment with the showroom system.",
 ];
 
 const getCheckoutErrorMessage = (error) =>
@@ -161,6 +172,7 @@ function Checkout({ notifyRef }) {
   const [cartActionLoading, setCartActionLoading] = useState({});
   const [step, setStep] = useState(1);
   const [loading, setLoading] = useState(false);
+  const [paymentLoading, setPaymentLoading] = useState(null);
   const [paymentType, setPaymentType] = useState("deposit");
   const [selectedIds, setSelectedIds] = useState([]);
   const [confirmedItems, setConfirmedItems] = useState([]);
@@ -179,6 +191,23 @@ function Checkout({ notifyRef }) {
     },
     [notifyRef]
   );
+
+  const startPaymentLoading = useCallback(() => {
+    setPaymentLoading({
+      activeStep: 0,
+    });
+  }, []);
+
+  const updatePaymentLoadingStep = useCallback((activeStep) => {
+    setPaymentLoading((current) => {
+      if (!current) return current;
+
+      return {
+        ...current,
+        activeStep: Math.max(current.activeStep, activeStep),
+      };
+    });
+  }, []);
 
   useEffect(() => {
     fetchCart?.();
@@ -227,11 +256,13 @@ function Checkout({ notifyRef }) {
     });
 
     showMessage("Please confirm the full payment in MetaMask...");
+    updatePaymentLoadingStep(3);
 
     const tx = await contract.payFull(blockchainOrderId, { value });
 
     setFinalTxHash(tx.hash);
     showMessage("Transaction sent. Waiting for blockchain confirmation...");
+    updatePaymentLoadingStep(4);
 
     const receipt = await tx.wait();
 
@@ -239,6 +270,7 @@ function Checkout({ notifyRef }) {
       throw new Error("Transaction failed on-chain.");
     }
 
+    updatePaymentLoadingStep(5);
     await orderService.verifyFullPayment(dbOrderId, tx.hash);
     return tx.hash;
   };
@@ -270,11 +302,13 @@ function Checkout({ notifyRef }) {
     });
 
     showMessage("Please confirm the deposit in MetaMask...");
+    updatePaymentLoadingStep(3);
 
     const tx = await contract.payDeposit(blockchainOrderId, { value });
 
     setFinalTxHash(tx.hash);
     showMessage("Deposit transaction sent. Waiting for blockchain confirmation...");
+    updatePaymentLoadingStep(4);
 
     const receipt = await tx.wait();
 
@@ -282,6 +316,7 @@ function Checkout({ notifyRef }) {
       throw new Error("Deposit transaction failed on-chain.");
     }
 
+    updatePaymentLoadingStep(5);
     await orderService.verifyDeposit(dbOrderId, tx.hash);
     return tx.hash;
   };
@@ -389,9 +424,12 @@ function Checkout({ notifyRef }) {
     try {
       setLoading(true);
       setFinalTxHash("");
+      startPaymentLoading();
 
+      updatePaymentLoadingStep(1);
       await ensureSelectedWalletReady(paymentDetails.walletAddress);
 
+      updatePaymentLoadingStep(2);
       const response = await orderService.createOrder(buildOrderPayload());
       orderData = normalizeOrderData(response);
 
@@ -434,6 +472,7 @@ function Checkout({ notifyRef }) {
         showMessage("Order failed: " + getCheckoutErrorMessage(error));
       }
     } finally {
+      setPaymentLoading(null);
       setLoading(false);
     }
   };
@@ -551,6 +590,7 @@ function Checkout({ notifyRef }) {
   return (
     <>
       <Navbar />
+      <CheckoutPaymentOverlay loading={paymentLoading} />
 
       <main className="checkout-page">
         <section className="checkout-hero" aria-labelledby="checkout-title">
@@ -634,5 +674,65 @@ function Checkout({ notifyRef }) {
     </>
   );
 }
+
+const LottieCarAnimation = () => {
+  const containerRef = useRef(null);
+
+  useEffect(() => {
+    if (!containerRef.current) return undefined;
+
+    const animation = lottie.loadAnimation({
+      container: containerRef.current,
+      renderer: "svg",
+      loop: true,
+      autoplay: true,
+      animationData: loadingCarAnimation,
+    });
+
+    return () => animation.destroy();
+  }, []);
+
+  return (
+    <div
+      className="checkout-payment-loading-animation"
+      ref={containerRef}
+      aria-hidden="true"
+    />
+  );
+};
+
+const CheckoutPaymentOverlay = ({ loading }) => {
+  if (!loading) return null;
+
+  return (
+    <div className="checkout-payment-loading-overlay" role="status" aria-live="polite">
+      <div className="checkout-payment-loading-panel">
+        <div className="checkout-payment-loading-visual">
+          <LottieCarAnimation />
+        </div>
+
+        <ol className="checkout-payment-loading-steps">
+          {CHECKOUT_PAYMENT_STEPS.map((stepText, index) => {
+            const isDone = index < loading.activeStep;
+            const isActive = index === loading.activeStep;
+            const isConnectorDone = index < loading.activeStep;
+
+            return (
+              <li
+                className={`${isDone ? "done" : ""} ${isActive ? "active" : ""} ${
+                  isConnectorDone ? "connector-done" : ""
+                }`.trim()}
+                key={stepText}
+              >
+                  <span>{index + 1}</span>
+                <p>{stepText}</p>
+              </li>
+            );
+          })}
+        </ol>
+      </div>
+    </div>
+  );
+};
 
 export default Checkout;
