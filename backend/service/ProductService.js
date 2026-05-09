@@ -1,4 +1,14 @@
 import Product from "../models/ProductModel.js";
+import Order from "../models/OrderModel.js";
+
+const PRODUCT_DELETE_BLOCKING_ORDER_STATUSES = [
+  "pending_deposit",
+  "pending_payment",
+  "deposit_paid",
+  "payment_paid",
+  "processing",
+  "confirmed",
+];
 
 /*
   =========================
@@ -306,6 +316,26 @@ export const deleteProductService = async (id) => {
 
   if (!product) {
     throw new Error("NOT_FOUND");
+  }
+
+  const activeOrder = await Order.findOne({
+    "items.productId": id,
+    status: { $in: PRODUCT_DELETE_BLOCKING_ORDER_STATUSES },
+  })
+    .select("_id status blockchainOrderId")
+    .lean();
+
+  if (activeOrder) {
+    const error = new Error(
+      "This vehicle cannot be deleted because it has active deposit or payment orders."
+    );
+    error.code = "PRODUCT_HAS_ACTIVE_ORDERS";
+    error.details = {
+      orderId: activeOrder._id,
+      status: activeOrder.status,
+      blockchainOrderId: activeOrder.blockchainOrderId,
+    };
+    throw error;
   }
 
   return await Product.findByIdAndDelete(id);

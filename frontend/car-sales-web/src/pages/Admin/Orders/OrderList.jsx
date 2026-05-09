@@ -4,8 +4,8 @@ import { orderService } from '../../../services/orderService';
 import { getBlockchainErrorMessage } from '../../../utils/blockchainErrors';
 import './OrderList.css';
 
-const getVietnameseErrorMessage = (error, fallback) =>
-  getBlockchainErrorMessage(error, { fallback, locale: "vi" });
+const getErrorMessage = (error, fallback) =>
+  getBlockchainErrorMessage(error, { fallback });
 
 const isFullPaymentRecorded = (order) =>
   order.paymentType === 'full' &&
@@ -20,11 +20,15 @@ const getOrderStatusKey = (order) =>
     ? 'payment_paid'
     : order.status?.toLowerCase();
 
-const OrderList = () => {
+const OrderList = ({ notifyRef }) => {
   const [orders, setOrders] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [expandedOrderId, setExpandedOrderId] = useState(null);
   const [processingAction, setProcessingAction] = useState(null);
+
+  const showNotification = (message, type = "info") => {
+    notifyRef?.current?.showNotification("System Message", message, type);
+  };
 
   const getProcessingText = (action) => {
     if (action === 'confirm') return 'Đang xác nhận...';
@@ -101,20 +105,20 @@ const OrderList = () => {
     if (processingAction) return;
 
     if (!order.blockchainOrderId) {
-      return alert("Đơn hàng này chưa có mã định danh Blockchain!");
+      return showNotification("This order does not have a blockchain ID yet.", "error");
     }
 
     try {
       setProcessingAction({ orderId: order._id, action: 'confirm' });
       const result = await orderService.adminConfirm(order._id);
-      alert("Xác nhận đơn hàng thành công!");
+      showNotification("Order confirmed successfully.", "success");
       if (result?.txHash) {
         console.log("Admin confirm txHash:", result.txHash);
       }
       await fetchOrders();
     } catch (error) {
       console.error("Lỗi khi xác nhận đơn hàng:", error);
-      alert(getVietnameseErrorMessage(error, "Có lỗi xảy ra khi xác nhận đơn hàng."));
+      showNotification(getErrorMessage(error, "Something went wrong while confirming the order."), "error");
     } finally {
       setProcessingAction(null);
     }
@@ -127,20 +131,20 @@ const OrderList = () => {
     if (!window.confirm("Bạn có chắc chắn muốn hủy đơn hàng này?")) return;
 
     if (!order.blockchainOrderId) {
-      return alert("Đơn hàng này chưa có mã định danh Blockchain!");
+      return showNotification("This order does not have a blockchain ID yet.", "error");
     }
 
     try {
       setProcessingAction({ orderId: order._id, action: 'cancel' });
       const result = await orderService.adminCancel(order._id);
-      alert("Hủy đơn hàng thành công!");
+      showNotification("Order cancelled successfully.", "success");
       if (result?.txHash) {
         console.log("Admin cancel txHash:", result.txHash);
       }
       await fetchOrders();
     } catch (error) {
       console.error("Lỗi khi hủy đơn hàng:", error);
-      alert(getVietnameseErrorMessage(error, "Có lỗi xảy ra khi hủy đơn hàng."));
+      showNotification(getErrorMessage(error, "Something went wrong while cancelling the order."), "error");
     } finally {
       setProcessingAction(null);
     }

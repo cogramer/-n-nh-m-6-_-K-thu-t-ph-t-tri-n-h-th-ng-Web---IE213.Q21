@@ -2,7 +2,7 @@ import { useEffect, useState } from "react";
 import { Link, useNavigate, useParams } from "react-router-dom";
 import ProductService from "../../../services/ProductService"; // Import the product service
 import "./ProductEdit.css";
-function ProductEdit() {
+function ProductEdit({ notifyRef }) {
   const { id } = useParams();
   const navigate = useNavigate();
   const [car, setCar] = useState(null); // State for product data loaded from the API
@@ -13,6 +13,11 @@ function ProductEdit() {
   const [displayGallery, setDisplayGallery] = useState([]);
   // State for actual files sent to the server
   const [newGalleryFiles, setNewGalleryFiles] = useState([]);
+
+  const showNotification = (message, type = "info") => {
+    notifyRef?.current?.showNotification("System Message", message, type);
+  };
+
   // Load product data from the API
   useEffect(() => {
     const fetchProduct = async () => {
@@ -65,31 +70,38 @@ function ProductEdit() {
       });
 
       await ProductService.updateProduct(id, formData);
-      alert("Cập nhật thông số và ảnh thành công!");
+      showNotification("Product specifications and images updated successfully.", "success");
     } catch (err) {
       console.error("Lỗi khi lưu:", err);
-      alert("Có lỗi xảy ra, vui lòng kiểm tra console.");
+      showNotification("Something went wrong. Please check the console.", "error");
     }
   };
   // Handle stock quantity changes
   const handleStockChange = (changeAmount) => {
-    setCar(prev => {
-      const currentStock = prev.stock || 0;
-      const newStock = currentStock + changeAmount;
+    const currentStock = Number(car?.stock || 0);
+    const newStock = currentStock + changeAmount;
 
-      // Prevent negative stock values
-      if (newStock < 0) {
-        alert("Số lượng tồn kho không thể nhỏ hơn 0!");
-        return prev;
-      }
+    // Prevent negative stock values
+    if (newStock < 0) {
+      showNotification("Stock quantity cannot be below zero.", "error");
+      return;
+    }
 
-      return { ...prev, stock: newStock };
-    });
+    setCar(prev => ({ ...prev, stock: newStock }));
   };
   const handleDelete = async () => {
     if (window.confirm("Bạn có chắc muốn xóa xe này?")) {
-      await ProductService.deleteProduct(id);
-      navigate("/admin/products");
+      try {
+        await ProductService.deleteProduct(id);
+        showNotification("Vehicle deleted successfully.", "success");
+        navigate("/admin/products");
+      } catch (error) {
+        console.error("Lỗi khi xóa xe:", error);
+        showNotification(
+          error?.response?.data?.message || "Unable to delete this vehicle.",
+          "error"
+        );
+      }
     }
   };
   const handleRemoveImage = (indexToRemove) => {

@@ -115,13 +115,11 @@ export const CartProvider = ({ children }) => {
       }
 
       if (Number.isFinite(stock) && stock <= 0) {
-        //alert("Sản phẩm đã hết hàng, không thể thêm vào giỏ. tesst");
         showNotification("System Message", "This product is out of stock.", "error");
         return;
       }
 
       if (Number.isFinite(stock) && Number(quantity) > stock) {
-        //alert(`Chỉ còn ${stock} xe trong kho.`);
         showNotification("System Message", `Only ${stock} units available.`, "error");
         return;
       }

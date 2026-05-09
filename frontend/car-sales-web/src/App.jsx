@@ -165,7 +165,7 @@ function App() {
               path="/orders"
               element={
                 <PrivateRoute>
-                  <MyOrders />
+                  <MyOrders notifyRef={notifyRef} />
                 </PrivateRoute>
               }
             />
@@ -196,10 +196,10 @@ function App() {
               }
             >
               <Route index element={<AdminDashboard />} />
-              <Route path="orders" element={<OrderList />} />
+              <Route path="orders" element={<OrderList notifyRef={notifyRef} />} />
               <Route path="contacts" element={<AdminContactList />} />
-              <Route path="products" element={<ProductList />} />
-              <Route path="productEdit/:id" element={<ProductEdit />} />
+              <Route path="products" element={<ProductList notifyRef={notifyRef} />} />
+              <Route path="productEdit/:id" element={<ProductEdit notifyRef={notifyRef} />} />
             </Route>
 
             <Route path="*" element={<Navigate to="/" replace />} />

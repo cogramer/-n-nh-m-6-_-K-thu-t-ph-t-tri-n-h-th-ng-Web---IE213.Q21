@@ -18,6 +18,7 @@ import {
   X,
 } from "lucide-react";
 import ProductService from "../../../services/ProductService";
+import { orderService } from "../../../services/orderService";
 import "./ProductList.css";
 
 const API_ORIGIN = (
@@ -28,6 +29,14 @@ const API_ORIGIN = (
 ).replace(/\/$/, "");
 const PLACEHOLDER_IMAGE = "/images/car.webp";
 const PAGE_SIZE = 8;
+const DELETE_BLOCKING_ORDER_STATUSES = new Set([
+  "pending_deposit",
+  "pending_payment",
+  "deposit_paid",
+  "payment_paid",
+  "processing",
+  "confirmed",
+]);
 
 const initialForm = {
   name: "",
@@ -119,6 +128,23 @@ const splitLines = (value) =>
     .map((item) => item.trim())
     .filter(Boolean);
 
+const getOrderItemProductId = (item) => item?.productId?._id || item?.productId;
+
+const getDeleteBlockedProductIds = (orders) => {
+  const ids = new Set();
+
+  (orders || []).forEach((order) => {
+    if (!DELETE_BLOCKING_ORDER_STATUSES.has(order?.status)) return;
+
+    (order.items || []).forEach((item) => {
+      const productId = getOrderItemProductId(item);
+      if (productId) ids.add(String(productId));
+    });
+  });
+
+  return ids;
+};
+
 const ProductImage = ({ src, alt }) => {
   const [currentSrc, setCurrentSrc] = useState(normalizeImagePath(src));
   const [fallbackUsed, setFallbackUsed] = useState(false);
@@ -148,7 +174,7 @@ const ProductImage = ({ src, alt }) => {
   );
 };
 
-function ProductList() {
+function ProductList({ notifyRef }) {
   const [products, setProducts] = useState([]);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -163,15 +189,31 @@ function ProductList() {
   const [powertrainFilter, setPowertrainFilter] = useState("all");
   const [stockFilter, setStockFilter] = useState("all");
   const [page, setPage] = useState(1);
+  const [deleteBlockedProductIds, setDeleteBlockedProductIds] = useState(() => new Set());
+
+  const showNotification = (message, type = "info") => {
+    notifyRef?.current?.showNotification("System Message", message, type);
+  };
 
   const fetchProducts = async () => {
     try {
       setLoading(true);
-      const data = await ProductService.getAllProducts();
+      const [data, ordersResponse] = await Promise.all([
+        ProductService.getAllProducts(),
+        orderService.getAllOrders().catch((error) => {
+          console.error("Failed to load active order locks:", error);
+          return null;
+        }),
+      ]);
+      const orders = Array.isArray(ordersResponse)
+        ? ordersResponse
+        : ordersResponse?.data || [];
+
       setProducts(Array.isArray(data) ? data : data?.products || []);
+      setDeleteBlockedProductIds(getDeleteBlockedProductIds(orders));
     } catch (error) {
       console.error("Lỗi khi tải danh sách xe:", error);
-      alert("Không thể tải danh sách xe. Vui lòng kiểm tra backend.");
+      showNotification("Unable to load the vehicle list. Please check the backend.", "error");
     } finally {
       setLoading(false);
     }
@@ -339,32 +381,32 @@ function ProductList() {
 
   const validateForm = () => {
     if (!form.name.trim() || !form.brand.trim() || !form.category.trim()) {
-      alert("Vui lòng nhập tên xe, hãng xe và phân khúc.");
+      showNotification("Please enter the vehicle name, brand, and category.", "error");
       return false;
     }
 
     if (form.price === "" || Number(form.price) < 0 || form.stock === "" || Number(form.stock) < 0) {
-      alert("Giá bán và tồn kho phải là số không âm.");
+      showNotification("Price and stock must be non-negative numbers.", "error");
       return false;
     }
 
     if (!form.model.trim() || !form.engine.trim()) {
-      alert("Vui lòng nhập model và động cơ trong phần thông số kỹ thuật.");
+      showNotification("Please enter the model and engine in the technical specifications.", "error");
       return false;
     }
 
     if (!form.fuelConsumptionValue) {
-      alert("Vui lòng nhập mức tiêu thụ nhiên liệu/năng lượng.");
+      showNotification("Please enter the fuel or energy consumption value.", "error");
       return false;
     }
 
     if (form.powertrainType === "electric" && !form.batteryCapacityValue) {
-      alert("Xe điện cần có dung lượng pin.");
+      showNotification("Electric vehicles require a battery capacity.", "error");
       return false;
     }
 
     if (modalMode === "create" && (!files.thumbnailImage || !files.heroImage)) {
-      alert("Tạo xe mới cần có ảnh thumbnail và ảnh hero.");
+      showNotification("New vehicles require both thumbnail and hero images.", "error");
       return false;
     }
 
@@ -381,10 +423,10 @@ function ProductList() {
 
       if (modalMode === "create") {
         await ProductService.createProduct(formData);
-        alert("Tạo xe mới thành công!");
+        showNotification("Vehicle created successfully.", "success");
       } else {
         await ProductService.updateProduct(selectedProduct._id, formData);
-        alert("Cập nhật xe thành công!");
+        showNotification("Vehicle updated successfully.", "success");
       }
 
       setModalMode(null);
@@ -392,23 +434,31 @@ function ProductList() {
       await fetchProducts();
     } catch (error) {
       console.error("Lỗi khi lưu xe:", error);
-      alert(error?.response?.data?.message || "Không thể lưu thông tin xe. Vui lòng kiểm tra dữ liệu.");
+      showNotification("Unable to save vehicle information. Please check the form data.", "error");
     } finally {
       setSaving(false);
     }
   };
 
   const handleDelete = async (product) => {
+    if (deleteBlockedProductIds.has(String(product._id))) {
+      showNotification("This vehicle has active deposit or payment orders and cannot be deleted.", "error");
+      return;
+    }
+
     if (!window.confirm(`Bạn có chắc chắn muốn xóa xe "${product.name}"?`)) return;
 
     try {
       setDeletingId(product._id);
       await ProductService.deleteProduct(product._id);
       setProducts((prev) => prev.filter((item) => item._id !== product._id));
-      alert("Xóa xe thành công!");
+      showNotification("Vehicle deleted successfully.", "success");
     } catch (error) {
       console.error("Lỗi khi xóa xe:", error);
-      alert(error?.response?.data?.message || "Không thể xóa xe này.");
+      showNotification(
+        error?.response?.data?.message || "Unable to delete this vehicle.",
+        "error"
+      );
     } finally {
       setDeletingId("");
     }
@@ -517,6 +567,7 @@ function ProductList() {
                 visibleProducts.map((product) => {
                   const specs = product.specifications || {};
                   const stockState = getStockState(product.stock);
+                  const isDeleteBlocked = deleteBlockedProductIds.has(String(product._id));
 
                   return (
                     <tr key={product._id}>
@@ -566,8 +617,12 @@ function ProductList() {
                             type="button"
                             className="icon-btn delete"
                             onClick={() => handleDelete(product)}
-                            disabled={deletingId === product._id}
-                            title="Xóa xe"
+                            disabled={deletingId === product._id || isDeleteBlocked}
+                            title={
+                              isDeleteBlocked
+                                ? "This vehicle has active deposit or payment orders"
+                                : "Xóa xe"
+                            }
                           >
                             {deletingId === product._id ? <LoaderCircle size={17} className="spin-icon" /> : <Trash2 size={17} />}
                           </button>

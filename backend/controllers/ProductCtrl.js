@@ -77,11 +77,22 @@ export const deleteProduct = async (req, res) => {
     await deleteProductService(req.params.id);
 
     res.status(200).json({
-      message: "Đã xóa sản phẩm"
+      message: "Product deleted successfully"
     });
   } catch (error) {
-    const status = error.message === "NOT_FOUND" ? 404 : 500;
-    res.status(status).json({ message: error.message });
+    const status =
+      error.message === "NOT_FOUND"
+        ? 404
+        : error.code === "PRODUCT_HAS_ACTIVE_ORDERS"
+          ? 409
+          : 500;
+
+    res.status(status).json({
+      success: false,
+      message: error.message,
+      code: error.code,
+      details: error.details,
+    });
   }
 };
 

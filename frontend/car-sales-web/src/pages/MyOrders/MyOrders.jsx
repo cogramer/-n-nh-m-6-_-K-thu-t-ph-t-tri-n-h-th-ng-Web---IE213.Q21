@@ -99,7 +99,7 @@ const getItemProductId = (item) => item.productId?._id || item.productId;
 
 const getOrderReviewKey = (orderId, productId) => `${orderId}-${productId}`;
 
-function MyOrders() {
+function MyOrders({ notifyRef }) {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
   const [actionState, setActionState] = useState(null);
@@ -109,6 +109,10 @@ function MyOrders() {
   const [reviewDrafts, setReviewDrafts] = useState({});
   const [reviewSavingKey, setReviewSavingKey] = useState("");
 
+  const showNotification = (message, type = "info") => {
+    notifyRef?.current?.showNotification("System Message", message, type);
+  };
+
   const fetchOrders = async () => {
     try {
       setLoading(true);
@@ -117,7 +121,7 @@ function MyOrders() {
       setOrders(list);
     } catch (error) {
       console.error("Failed to load orders:", error);
-      alert(getErrorMessage(error));
+      showNotification(getErrorMessage(error), "error");
     } finally {
       setLoading(false);
     }
@@ -166,7 +170,7 @@ function MyOrders() {
       await fetchOrders();
     } catch (error) {
       console.error("Failed to process order:", error);
-      alert(getErrorMessage(error));
+      showNotification(getErrorMessage(error), "error");
     } finally {
       setActionState(null);
     }
@@ -187,7 +191,7 @@ function MyOrders() {
       });
       await tx.wait();
       await orderService.verifyDeposit(order._id, tx.hash);
-      alert("Deposit paid successfully. Your order is waiting for showroom confirmation.");
+      showNotification("Deposit paid successfully. Your order is waiting for showroom confirmation.", "success");
     });
   };
 
@@ -206,7 +210,7 @@ function MyOrders() {
       });
       await tx.wait();
       await orderService.verifyFullPayment(order._id, tx.hash);
-      alert("Payment completed successfully. Your order is waiting for showroom confirmation.");
+      showNotification("Payment completed successfully. Your order is waiting for showroom confirmation.", "success");
     });
   };
 
@@ -222,7 +226,7 @@ function MyOrders() {
       const tx = await contract.completeOrder(order.blockchainOrderId);
       await tx.wait();
       await orderService.verifyComplete(order._id, tx.hash);
-      alert("The transaction has been completed successfully.");
+      showNotification("The transaction has been completed successfully.", "success");
     });
   };
 
@@ -238,7 +242,7 @@ function MyOrders() {
       const tx = await contract.cancelOrder(order.blockchainOrderId);
       await tx.wait();
       await orderService.verifyCancel(order._id, tx.hash);
-      alert("Order cancelled successfully.");
+      showNotification("Order cancelled successfully.", "success");
     });
   };
 
@@ -298,7 +302,7 @@ function MyOrders() {
 
     const productId = getItemProductId(item);
     if (!productId) {
-      alert("This vehicle is no longer available for review.");
+      showNotification("This vehicle is no longer available for review.", "error");
       return;
     }
 
@@ -307,7 +311,7 @@ function MyOrders() {
     const comment = String(draft.comment || "").trim();
 
     if (!comment) {
-      alert("Please enter your review before saving.");
+      showNotification("Please enter your review before saving.", "error");
       return;
     }
 
@@ -328,10 +332,10 @@ function MyOrders() {
           saved: true,
         },
       }));
-      alert("Review saved successfully.");
+      showNotification("Review saved successfully.", "success");
     } catch (error) {
       console.error("Failed to save review:", error);
-      alert(getErrorMessage(error));
+      showNotification(getErrorMessage(error), "error");
     } finally {
       setReviewSavingKey("");
     }
